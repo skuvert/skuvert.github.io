@@ -924,17 +924,6 @@ async function submitForm() {
     if (S.cPhone) fd.append('Telefon / WhatsApp', S.cPhone);
     if (S.cNotes) fd.append('Anmerkungen',        S.cNotes);
 
-    // File attachments (Web3Forms accepts field name "attachment")
-    S.files.forEach(file => fd.append('attachment', file, file.name));
-
-    const res  = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd });
-    const data = await res.json();
-
-    if (data.success) {
-      showStep('done');
-    } else {
-      throw new Error(data.message || 'Unbekannter Fehler');
-    }
   } catch (err) {
     document.getElementById('submitLoading').style.display = 'none';
     document.getElementById('submitBtn').style.display = 'block';
