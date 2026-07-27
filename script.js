@@ -334,7 +334,7 @@
       <div class="rf-field">${label("Farbe", true)}
         <div class="color-row">${mat.colors.map(
           (c) => `<div class="color-swatch-wrap${s.color === c.n ? " selected" : ""}" data-color="${esc(c.n)}">
-            <div class="color-swatch" style="background:${c.h}${c.h === "#f0f0f0" ? ";box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)" : ""}"></div>
+            <div class="color-swatch" style="background:${c.h}"></div>
             <span>${esc(c.n)}</span>
           </div>`
         ).join("")}</div>
