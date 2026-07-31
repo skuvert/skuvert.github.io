@@ -116,6 +116,27 @@
   });
 })();
 
+// ---------- scroll reveal ----------
+(function initReveal() {
+  const targets = document.querySelectorAll(".reveal");
+  if (!("IntersectionObserver" in window) || targets.length === 0) {
+    targets.forEach((el) => el.classList.add("in-view"));
+    return;
+  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+  );
+  targets.forEach((el) => observer.observe(el));
+})();
+
 // ---------- request form ----------
 (function initRequestForm() {
   const mount = document.getElementById("request-form");
@@ -158,7 +179,7 @@
   const SERVICES = [
     { key: "design", icon: "✏️", title: "Nur Design", desc: "Ich erstelle ein 3D-Modell nach deinen Vorgaben inklusive kommerzieller Lizenz. Du erhältst die fertigen Dateien zum selbst Drucken." },
     { key: "print", icon: "🖨️", title: "Nur 3D-Druck", desc: "Du lieferst das 3D-Modell, ich drucke es auf meinem Bambu Lab-System in Topqualität und schicke es dir zu." },
-    { key: "both", icon: "⚡", title: "Komplett-Paket", desc: "Von der Skizze zum fertigen Druck — ich übernehme Design und Produktion. Du erhältst das fertige Objekt direkt zu dir nach Hause." },
+    { key: "both", icon: "⚡", title: "Komplett-Paket", desc: "Von der Skizze zum fertigen Druck, ich übernehme Design und Produktion. Du erhältst das fertige Objekt direkt zu dir nach Hause." },
   ];
 
   const SVC_LABEL = {
@@ -201,7 +222,7 @@
     let min = opt.min, max = opt.max;
     if (s.multicolor && data.mc) { min += 3; max += 3; }
     let text = `CHF ${min}–${max}`;
-    if (s.service === "print") text += " (exkl. Versand)";
+    if (s.service === "print" || s.service === "both") text += " (exkl. Versand)";
     if (s.multicolor && data.mc) text += " inkl. Mehrfarbig";
     return text;
   }
@@ -379,6 +400,7 @@
         <button class="glass-btn glass-btn--whatsapp send-btn" data-action="send-whatsapp">💬 WhatsApp</button>
       </div>
       <div class="send-hint">Ich melde mich so schnell wie möglich mit einem Angebot.</div>
+      <div class="send-hint">💳 Bezahlung bequem per TWINT, PayPal oder Banküberweisung</div>
       <div class="nav-row center-only"><button class="glass-btn glass-btn--ghost" data-action="step4-back">← Zurück</button></div>
     </div>`;
   }
