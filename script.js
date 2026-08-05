@@ -223,7 +223,6 @@ let min = opt.min, max = opt.max;
 if (s.multicolor && data.mc) { min += 3; max += 3; }
 let text = `CHF ${min}–${max}`;
 if (s.service === "print" || s.service === "both") text += " (exkl. Versand)";
-if (s.multicolor && data.mc) text += " inkl. Mehrfarbig";
 return text;
 }
 
@@ -407,7 +406,7 @@ ${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span>
 <button class="glass-btn glass-btn--whatsapp send-btn" data-action="send-whatsapp">💬 WhatsApp</button>
 </div>
 <div class="send-hint">Ich melde mich so schnell wie möglich mit einem Angebot.</div>
-<div class="send-hint">💳 Bezahlung bequem per Stripe oder Banküberweisung</div>
+<div class="send-hint">💳 Bezahlung bequem und sicher per Stripe</div>
 <div class="nav-row center-only"><button class="glass-btn glass-btn--ghost" data-action="step4-back">← Zurück</button></div>
 </div>`;
 }
@@ -422,6 +421,11 @@ return `<div class="success-screen">
 }
 
 function render() {
+// Anker: Position der Formular-Karte vor dem Neuaufbau merken,
+// damit die Seite beim Schritt-Wechsel (Weiter/Zurück) nicht springt.
+const prevCard = mount.querySelector(".request-card");
+const prevTop = prevCard ? prevCard.getBoundingClientRect().top : null;
+
 let inner;
 if (s.sent) {
 inner = successHtml();
@@ -434,6 +438,15 @@ else inner += step4Html();
 }
 mount.innerHTML = `<div class="request-card">${inner}</div>`;
 attachListeners();
+
+// Karte wieder an dieselbe Bildschirmposition setzen -> kein Springen.
+if (prevTop !== null) {
+const newCard = mount.querySelector(".request-card");
+if (newCard) {
+const delta = newCard.getBoundingClientRect().top - prevTop;
+if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+}
+}
 }
 
 function bindText(id, field) {
