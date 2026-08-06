@@ -146,6 +146,13 @@ const INK = "#0F172A";
 const MUTED = "#64748B";
 const ACCENT = "#2563EB";
 
+// ===== Auftragsnummer-Konfiguration =====
+// Nach dem Deployen des Google Apps Scripts (siehe auftragsnummer.gs) hier die
+// Web-App-URL eintragen. Solange dieses Feld leer ist ODER der Server nicht
+// erreichbar ist, wird eine klar markierte provisorische Nummer (SKV-JAHR-Pxxx)
+// erzeugt – diese ist NICHT fortlaufend und dient nur als Notlösung.
+const https://script.google.com/macros/s/AKfycbytNMII6Emuk3LqKDG3DLNKBRjD94b5UcWeX1wN2PHt6UuQQl2_pcY7AsJ4Dj_pE5f5ww/exec = ""; // z. B. "https://script.google.com/macros/s/AKfy.../exec"
+
 const PRICE_DATA = {
 design: {
 label: "Komplexität", mc: false, note: "",
@@ -208,11 +215,136 @@ const initialState = {
 step: 1, service: null, priceIdx: null, multicolor: false,
 name: "", description: "", qty: "", material: "PLA", color: null,
 firstName: "", lastName: "", email: "", phone: "", notes: "", agb: false, sent: false,
+orderNo: null,
 };
 let s = { ...initialState };
 
 function esc(str) {
 return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ===== Auftragsnummer =====
+// Reserviert genau EINE Auftragsnummer pro Anfrage. Bevorzugt serverseitig
+// (fortlaufend, eindeutig) über das Apps Script; fällt bei fehlender URL oder
+// Netzwerkfehler auf eine provisorische Nummer zurück.
+async function reserveOrderNumber() {
+if (s.orderNo) return s.orderNo; // pro Anfrage nur einmal vergeben
+if (ORDER_NUMBER_ENDPOINT) {
+try {
+// Einfacher GET-Request (kein Preflight) -> vermeidet CORS-Probleme.
+const res = await fetch(ORDER_NUMBER_ENDPOINT, { method: "GET" });
+const data = await res.json();
+if (data && data.orderNo) { s.orderNo = String(data.orderNo); return s.orderNo; }
+} catch (err) {
+console.warn("Auftragsnummer-Server nicht erreichbar – nutze provisorische Nummer.", err);
+}
+}
+s.orderNo = provisionalOrderNumber();
+return s.orderNo;
+}
+
+// Notlösung ohne Backend: NICHT fortlaufend, pro Gerät/Browser verschieden.
+// Das "P" kennzeichnet die Nummer klar als provisorisch.
+function provisionalOrderNumber() {
+const year = new Date().getFullYear();
+const rnd = Math.floor(Math.random() * 900 + 100); // 3-stellig
+return `SKV-${year}-P${rnd}`;
+}
+
+// ===== AGB-/Datenschutz-Modal =====
+// Lädt den echten Inhalt aus agb.html bzw. datenschutz.html in ein schliessbares
+// Overlay (X-Button, Klick ausserhalb, ESC). Fällt bei Ladefehler auf das Öffnen
+// der jeweiligen Seite in einem neuen Tab zurück.
+const LEGAL_META = {
+agb: { url: "agb.html", title: "Allgemeine Geschäftsbedingungen" },
+datenschutz: { url: "datenschutz.html", title: "Datenschutzerklärung" },
+};
+
+function ensureLegalModalStyles() {
+if (document.getElementById("skv-legal-modal-style")) return;
+const st = document.createElement("style");
+st.id = "skv-legal-modal-style";
+st.textContent = `
+.skv-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15,23,42,0.55); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px); animation: skvFade .18s ease; }
+@keyframes skvFade { from { opacity: 0; } to { opacity: 1; } }
+.skv-modal { width: min(720px, 100%); max-height: min(84vh, 900px); display: flex;
+  flex-direction: column; background: #fff; border-radius: 18px; overflow: hidden;
+  box-shadow: 0 24px 70px rgba(15,23,42,0.35); }
+.skv-modal-head { display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 16px 20px; border-bottom: 1px solid #e5e9f0;
+  background: rgba(255,255,255,0.9); }
+.skv-modal-title { font-weight: 800; font-size: 16px; color: ${INK}; letter-spacing: -0.01em; }
+.skv-modal-close { flex: none; width: 34px; height: 34px; border: none; cursor: pointer;
+  border-radius: 50%; background: #eef1f6; color: ${INK}; font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.skv-modal-close:hover { background: #dde3ec; }
+.skv-modal-body { padding: 22px 24px 26px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  color: #334155; font-size: 14.5px; line-height: 1.65; }
+.skv-modal-body h1, .skv-modal-body h2 { font-size: 17px; font-weight: 700; color: ${INK};
+  margin: 22px 0 8px; letter-spacing: -0.01em; }
+.skv-modal-body h1:first-child, .skv-modal-body h2:first-child { margin-top: 0; }
+.skv-modal-body h3 { font-size: 14.5px; font-weight: 700; color: ${INK}; margin: 16px 0 6px; }
+.skv-modal-body p { margin: 0 0 12px; }
+.skv-modal-body ul, .skv-modal-body ol { padding-left: 20px; margin: 0 0 14px;
+  display: flex; flex-direction: column; gap: 6px; }
+.skv-modal-body ul { list-style: disc; } .skv-modal-body ol { list-style: decimal; }
+.skv-modal-body a { color: ${ACCENT}; font-weight: 600; }
+.skv-modal-body strong { color: ${INK}; font-weight: 700; }
+.skv-modal-loading { color: ${MUTED}; }
+.order-no-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+  margin: 4px auto 14px; padding: 10px 22px; border-radius: 14px;
+  background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.25);
+  font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${MUTED}; }
+.order-no-badge strong { font-size: 20px; letter-spacing: 0.02em; text-transform: none;
+  color: ${ACCENT}; font-weight: 800; }`;
+document.head.appendChild(st);
+}
+
+function openLegalModal(which) {
+const meta = LEGAL_META[which];
+if (!meta) return;
+ensureLegalModalStyles();
+
+const overlay = document.createElement("div");
+overlay.className = "skv-modal-overlay";
+overlay.innerHTML = `<div class="skv-modal" role="dialog" aria-modal="true" aria-label="${esc(meta.title)}">
+  <div class="skv-modal-head">
+    <span class="skv-modal-title">${esc(meta.title)}</span>
+    <button class="skv-modal-close" type="button" aria-label="Schliessen">&times;</button>
+  </div>
+  <div class="skv-modal-body"><p class="skv-modal-loading">Lädt …</p></div>
+</div>`;
+document.body.appendChild(overlay);
+document.body.style.overflow = "hidden"; // Hintergrund nicht scrollen
+
+const bodyEl = overlay.querySelector(".skv-modal-body");
+function close() {
+overlay.remove();
+document.body.style.overflow = "";
+document.removeEventListener("keydown", onKey);
+}
+function onKey(e) { if (e.key === "Escape") close(); }
+overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); }); // Klick ausserhalb
+overlay.querySelector(".skv-modal-close").addEventListener("click", close);
+document.addEventListener("keydown", onKey);
+overlay.querySelector(".skv-modal-close").focus();
+
+fetch(meta.url)
+.then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+.then((html) => {
+const doc = new DOMParser().parseFromString(html, "text/html");
+const content = doc.querySelector(".legal-card") || doc.querySelector(".legal-main") || doc.body;
+bodyEl.innerHTML = content.innerHTML;
+// Interne Links (z. B. auf impressum.html) in neuem Tab öffnen.
+bodyEl.querySelectorAll("a[href]").forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
+})
+.catch(() => {
+bodyEl.innerHTML = `<p>Der Inhalt konnte hier nicht geladen werden.</p>
+  <p><a href="${meta.url}" target="_blank" rel="noopener">${esc(meta.title)} in neuem Tab öffnen →</a></p>`;
+});
 }
 
 function priceRangeText() {
@@ -229,7 +361,9 @@ return text;
 function buildMessage(priceText) {
 const data = s.service ? PRICE_DATA[s.service] : null;
 const opt = data && s.priceIdx !== null ? data.options[s.priceIdx] : null;
-let m = `Neue Anfrage – Skuvert Custom 3D Service\n==========================================\n\n`;
+let m = `Neue Bestellung – Skuvert Custom 3D Service\n`;
+m += `Auftragsnummer: ${s.orderNo || "-"}\n`;
+m += `==========================================\n\n`;
 m += `SERVICE: ${s.service ? SVC_LABEL[s.service] : "-"}\n\n`;
 m += `MODELL\n`;
 m += `Bezeichnung : ${s.name}\n`;
@@ -259,16 +393,18 @@ if (!s.agb) { alert("Bitte akzeptiere die AGB und die Datenschutzerklärung, um 
 return true;
 }
 
-function sendEmail() {
+async function sendEmail() {
 if (!validateContact()) return;
-const subject = encodeURIComponent(`Skuvert Anfrage – ${s.name}`);
+await reserveOrderNumber(); // meist bereits beim Betreten von Schritt 4 vorreserviert
+const subject = encodeURIComponent(`Neue Bestellung – ${s.orderNo} – ${s.name}`);
 const body = encodeURIComponent(buildMessage(priceRangeText()));
 window.location.href = `mailto:skuvert.ch@gmail.com?subject=${subject}&body=${body}`;
 setTimeout(() => { s.sent = true; render(); }, 700);
 }
 
-function sendWhatsApp() {
+async function sendWhatsApp() {
 if (!validateContact()) return;
+await reserveOrderNumber();
 const text = encodeURIComponent(buildMessage(priceRangeText()));
 window.open(`https://wa.me/41774646298?text=${text}`, "_blank");
 setTimeout(() => { s.sent = true; render(); }, 700);
@@ -399,7 +535,7 @@ ${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span>
 <div class="notice-box compact"><span style="font-size:18px">⚠️</span><p>Bitte füge Skizzen, Fotos oder 3D-Dateien <strong>direkt im Mail- oder WhatsApp-Fenster</strong> als Anhang hinzu, bevor du sendest.</p></div>
 <label class="agb-check${s.agb ? " on" : ""}" data-action="toggle-agb">
 <input type="checkbox" ${s.agb ? "checked" : ""} tabindex="-1" aria-label="AGB und Datenschutzerklärung akzeptieren" style="pointer-events:none">
-<span>Ich habe die <a href="agb.html" target="_blank" rel="noopener">AGB</a> und die <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und akzeptiere sie. <span class="req">*</span></span>
+<span>Ich habe die <a href="agb.html" target="_blank" rel="noopener" data-legal="agb">AGB</a> und die <a href="datenschutz.html" target="_blank" rel="noopener" data-legal="datenschutz">Datenschutzerklärung</a> gelesen und akzeptiere sie. <span class="req">*</span></span>
 </label>
 <div class="send-grid" style="${dim}">
 <button class="glass-btn glass-btn--dark send-btn" data-action="send-email">✉️ Per E-Mail</button>
@@ -414,8 +550,9 @@ ${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span>
 function successHtml() {
 return `<div class="success-screen">
 <div class="success-check">✓</div>
-<h3>Anfrage gesendet!</h3>
-<p>Danke für deine Anfrage!<br>Ich melde mich so schnell wie möglich mit einem Angebot bei dir.</p>
+<h3>Bestellung gesendet!</h3>
+${s.orderNo ? `<div class="order-no-badge">Deine Auftragsnummer<strong>${esc(s.orderNo)}</strong></div>` : ""}
+<p>Danke für deine Bestellung!<br>Ich melde mich so schnell wie möglich mit einem Angebot bei dir. Bitte gib bei Rückfragen deine Auftragsnummer an.</p>
 <button class="glass-btn glass-btn--accent" data-action="restart">Neue Anfrage starten</button>
 </div>`;
 }
@@ -470,7 +607,15 @@ el.addEventListener("click", () => { s.color = el.dataset.color; render(); });
 const mc = mount.querySelector('[data-action="toggle-mc"]');
 if (mc) mc.addEventListener("click", () => { s.multicolor = !s.multicolor; render(); });
 const agb = mount.querySelector('[data-action="toggle-agb"]');
-if (agb) agb.addEventListener("click", (e) => { e.preventDefault(); s.agb = !s.agb; render(); });
+if (agb) agb.addEventListener("click", (e) => {
+// Klick auf einen AGB-/Datenschutz-Link -> Modal öffnen, Checkbox NICHT umschalten.
+const link = e.target.closest("a[data-legal]");
+if (link) { e.preventDefault(); openLegalModal(link.getAttribute("data-legal")); return; }
+// Klick auf den Rest des Labels -> Checkbox umschalten (Bestätigung bleibt Pflicht).
+e.preventDefault();
+s.agb = !s.agb;
+render();
+});
 
 const act = (name, fn) => { const el = mount.querySelector(`[data-action="${name}"]`); if (el) el.addEventListener("click", fn); };
 
@@ -503,6 +648,11 @@ bindText("f-lastName", "lastName");
 bindText("f-email", "email");
 bindText("f-phone", "phone");
 bindText("f-notes", "notes");
+
+// Auftragsnummer schon beim Betreten von Schritt 4 im Hintergrund reservieren,
+// damit sie beim Klick auf "Senden" ohne Wartezeit bereitsteht (verhindert auch,
+// dass der WhatsApp-Tab durch Popup-Blocker geblockt wird).
+if (s.step === 4 && !s.orderNo && !s.sent) { reserveOrderNumber(); }
 }
 
 render();
