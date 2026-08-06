@@ -151,7 +151,7 @@ const ACCENT = "#2563EB";
 // Web-App-URL eintragen. Solange dieses Feld leer ist ODER der Server nicht
 // erreichbar ist, wird eine klar markierte provisorische Nummer (SKV-JAHR-Pxxx)
 // erzeugt – diese ist NICHT fortlaufend und dient nur als Notlösung.
-const https://script.google.com/macros/s/AKfycbytNMII6Emuk3LqKDG3DLNKBRjD94b5UcWeX1wN2PHt6UuQQl2_pcY7AsJ4Dj_pE5f5ww/exec = ""; // z. B. "https://script.google.com/macros/s/AKfy.../exec"
+const ORDER_NUMBER_ENDPOINT = "https://script.google.com/macros/s/AKfycbytNMII6Emuk3LqKDG3DLNKBRjD94b5UcWeX1wN2PHt6UuQQl2_pcY7AsJ4Dj_pE5f5ww/exec";
 
 const PRICE_DATA = {
 design: {
