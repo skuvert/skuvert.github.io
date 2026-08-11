@@ -234,14 +234,6 @@ background: rgba(255,255,255,0.5); border-radius: 16px; cursor: pointer; transit
 .color-swatch-wrap.selected .color-swatch { border-color: var(--accent); transform: scale(1.12); }
 .color-swatch-wrap span { font-size: 10px; color: var(--muted); text-align: center; }
 
-.mc-toggle { display: flex; align-items: center; gap: 14px; cursor: pointer; margin-top: 4px; }
-.mc-track { width: 44px; height: 24px; border-radius: 999px; background: var(--border); position: relative; transition: background 0.2s; flex-shrink: 0; }
-.mc-track.on { background: var(--accent); }
-.mc-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-.mc-track.on .mc-thumb { left: 23px; }
-.mc-toggle .mc-title { font-weight: 700; font-size: 14px; color: var(--ink); }
-.mc-toggle .mc-sub { font-size: 12.5px; color: var(--muted); }
-
 .nav-row { display: flex; justify-content: space-between; margin-top: 28px; }
 .nav-row.end-only { justify-content: flex-end; }
 .nav-row.center-only { justify-content: center; }

@@ -201,19 +201,27 @@ desc: "Universalmaterial – ideal für Dekoartikel, Prototypen und Alltagsgegen
 colors: [
 { n: "Schwarz", h: "#1a1a1a" }, { n: "Grau", h: "#9ca3af" }, { n: "Weiss", h: "#f0f0f0" },
 { n: "Blau", h: "#2563eb" }, { n: "Dunkelblau", h: "#1e3a8a" }, { n: "Hellblau", h: "#7dd3fc" },
+{ n: "Türkis", h: "#14b8a6" },
 { n: "Rot", h: "#e02020" }, { n: "Orange", h: "#f97316" }, { n: "Hellorange", h: "#fdba74" },
 { n: "Gelb", h: "#facc15" }, { n: "Braun", h: "#92400e" }, { n: "Grün", h: "#16a34a" },
 { n: "Silber", h: "#c8c8c8" }, { n: "Gold", h: "#d4af37" },
 ],
 },
-PETG: { desc: "Stabiler, leicht flexibler Kunststoff mit guter Hitze- und Feuchtigkeitsbeständigkeit. Ideal für funktionale Teile.", colors: [{ n: "Grau", h: "#9ca3af" }] },
-TPU: { desc: "Flexibles, gummiartiges Material – ideal für Schutzhüllen, Dichtungen, Griffstücke und alles was Nachgeben soll.", colors: [{ n: "Schwarz", h: "#1a1a1a" }, { n: "Dunkelgrau", h: "#4b5563" }] },
-ABS: { desc: "UV- und wetterbeständig – für Aussenanwendungen, Schilder und alles, was Sonne, Regen und Temperaturwechsel standhält.", colors: [{ n: "Schwarz", h: "#1a1a1a" }] },
+PETG: {
+desc: "Stabiler, leicht flexibler Kunststoff mit guter Hitze- und Feuchtigkeitsbeständigkeit. Ideal für funktionale Teile.",
+colors: [
+{ n: "Grau", h: "#9ca3af" }, { n: "Schwarz", h: "#1a1a1a" }, { n: "Dunkelgrün", h: "#14532d" },
+{ n: "Durchsichtig", h: "repeating-conic-gradient(#e2e8f0 0% 25%, #ffffff 0% 50%) 50% / 10px 10px" },
+{ n: "Misty Blue", h: "#9db4c0" },
+],
+},
+TPU: { desc: "Flexibles, gummiartiges Material – ideal für Schutzhüllen, Dichtungen, Griffstücke und alles was Nachgeben soll.", colors: [{ n: "Schwarz", h: "#1a1a1a" }, { n: "Grau", h: "#9ca3af" }] },
+ABS: { desc: "UV- und wetterbeständig – für Aussenanwendungen, Schilder und alles, was Sonne, Regen und Temperaturwechsel standhält.", colors: [{ n: "Schwarz", h: "#1a1a1a" }, { n: "Weiss", h: "#f0f0f0" }] },
 };
 
 const initialState = {
-step: 1, service: null, priceIdx: null, multicolor: false,
-name: "", description: "", qty: "", material: "PLA", color: null,
+step: 1, service: null, priceIdx: null,
+name: "", description: "", qty: "", material: "PLA", colors: [],
 firstName: "", lastName: "", email: "", phone: "", notes: "", agb: false, sent: false,
 orderNo: null,
 };
@@ -347,12 +355,16 @@ bodyEl.innerHTML = `<p>Der Inhalt konnte hier nicht geladen werden.</p>
 });
 }
 
+function extraColorSurcharge(data) {
+return data.mc ? Math.max(0, s.colors.length - 1) * 3 : 0;
+}
+
 function priceRangeText() {
 if (!s.service || s.priceIdx === null) return "Wähle Service & Komplexität für eine erste Schätzung";
 const data = PRICE_DATA[s.service];
 const opt = data.options[s.priceIdx];
-let min = opt.min, max = opt.max;
-if (s.multicolor && data.mc) { min += 3; max += 3; }
+const surcharge = extraColorSurcharge(data);
+let min = opt.min + surcharge, max = opt.max + surcharge;
 let text = `CHF ${min}–${max}`;
 if (s.service === "print" || s.service === "both") text += " (exkl. Versand)";
 return text;
@@ -371,10 +383,11 @@ m += `${data ? data.label : "Komplexität"} : ${opt ? opt.label : "-"}\n`;
 m += `Menge : ${s.qty || "1 Stück"}\n`;
 m += `Beschreibung:\n${s.description}\n`;
 if (s.service !== "design") {
+const surcharge = extraColorSurcharge(data);
 m += `\nMATERIAL & FARBE\n`;
 m += `Material : ${s.material}\n`;
-m += `Farbe : ${s.color || "-"}\n`;
-m += `Mehrfarbig : ${s.multicolor ? "Ja" : "Nein"}\n`;
+m += `Farbe(n) : ${s.colors.length ? s.colors.join(", ") : "-"}\n`;
+if (surcharge > 0) m += `Mehrfarbig : Ja (${s.colors.length} Farben, +${surcharge} CHF)\n`;
 }
 m += `\nGESCHÄTZTE PREISRANGE: ${priceText}\n(Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.)\n`;
 if (s.notes) m += `\nANMERKUNGEN:\n${s.notes}\n`;
@@ -481,7 +494,7 @@ ${data.options.map(
 
 function step3Html() {
 const mat = MATERIALS[s.material];
-const showMc = PRICE_DATA[s.service].mc;
+const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
 return `<div>
 <div class="rf-title">Material &amp; Farbe</div>
 <div class="rf-subtitle">Alle Materialien werden auf meinen Bambu Lab-Druckern verarbeitet.</div>
@@ -489,18 +502,15 @@ return `<div>
 <div class="chip-row">${Object.keys(MATERIALS).map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
 <div class="mat-desc">${esc(mat.desc)}</div>
 </div>
-<div class="rf-field">${label("Farbe", true)}
+<div class="rf-field">${label("Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)", true)}
 <div class="color-row">${mat.colors.map(
-(c) => `<div class="color-swatch-wrap${s.color === c.n ? " selected" : ""}" data-color="${esc(c.n)}">
+(c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
 <div class="color-swatch" style="background:${c.h}"></div>
 <span>${esc(c.n)}</span>
 </div>`
 ).join("")}</div>
+${surcharge > 0 ? `<div class="mat-desc" style="margin-top:10px">🎨 Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>` : ""}
 </div>
-${showMc ? `<div class="mc-toggle" data-action="toggle-mc">
-<div class="mc-track${s.multicolor ? " on" : ""}"><div class="mc-thumb"></div></div>
-<div><div class="mc-title">Mehrfarbig / Multicolor (+3 CHF)</div><div class="mc-sub">Zwei oder mehr Farben im selben Druck</div></div>
-</div>` : ""}
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="step3-back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="step3-next">Weiter →</button></div>
 </div>`;
 }
@@ -525,7 +535,7 @@ return `<div>
 <div class="sum-row"><span class="k">Service</span><span class="v">${esc(s.service ? SVC_LABEL[s.service] : "-")}</span></div>
 <div class="sum-row"><span class="k">Objekt</span><span class="v">${esc(s.name)}</span></div>
 <div class="sum-row"><span class="k">${esc(data ? data.label : "Stufe")}</span><span class="v">${esc(opt ? opt.label : "-")}</span></div>
-${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span><span class="v">${esc(s.material)} · ${esc(s.color || "-")}${s.multicolor ? " · mehrfarbig" : ""}</span></div>` : ""}
+${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span><span class="v">${esc(s.material)} · ${esc(s.colors.length ? s.colors.join(", ") : "-")}</span></div>` : ""}
 </div>
 <div class="price-final">
 <div class="label">Geschätzte Preisrange</div>
@@ -593,19 +603,21 @@ if (el) el.addEventListener("input", (e) => { s[field] = e.target.value; });
 
 function attachListeners() {
 mount.querySelectorAll("[data-service]").forEach((el) => {
-el.addEventListener("click", () => { s.service = el.dataset.service; s.priceIdx = null; s.multicolor = false; render(); });
+el.addEventListener("click", () => { s.service = el.dataset.service; s.priceIdx = null; s.colors = []; render(); });
 });
 mount.querySelectorAll("[data-tier]").forEach((el) => {
 el.addEventListener("click", () => { s.priceIdx = Number(el.dataset.tier); render(); });
 });
 mount.querySelectorAll("[data-material]").forEach((el) => {
-el.addEventListener("click", () => { s.material = el.dataset.material; s.color = null; render(); });
+el.addEventListener("click", () => { s.material = el.dataset.material; s.colors = []; render(); });
 });
 mount.querySelectorAll("[data-color]").forEach((el) => {
-el.addEventListener("click", () => { s.color = el.dataset.color; render(); });
+el.addEventListener("click", () => {
+const c = el.dataset.color;
+s.colors = s.colors.includes(c) ? s.colors.filter((x) => x !== c) : [...s.colors, c];
+render();
 });
-const mc = mount.querySelector('[data-action="toggle-mc"]');
-if (mc) mc.addEventListener("click", () => { s.multicolor = !s.multicolor; render(); });
+});
 const agb = mount.querySelector('[data-action="toggle-agb"]');
 if (agb) agb.addEventListener("click", (e) => {
 // Klick auf einen AGB-/Datenschutz-Link -> Modal öffnen, Checkbox NICHT umschalten.
@@ -631,7 +643,7 @@ render();
 });
 act("step3-back", () => { s.step = 2; render(); });
 act("step3-next", () => {
-if (!(s.material && s.color)) { alert("Bitte Material und Farbe wählen."); return; }
+if (!(s.material && s.colors.length > 0)) { alert("Bitte Material und mindestens eine Farbe wählen."); return; }
 s.step = 4;
 render();
 });
