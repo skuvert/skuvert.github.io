@@ -1,105 +1,43 @@
-// ---------- pixel ripple hero background ----------
-(function initPixelBackground() {
-const canvas = document.getElementById("pixel-bg");
-const hero = document.getElementById("top");
-if (!canvas || !hero) return;
-const ctx = canvas.getContext("2d");
+// ---------- hero marquee background ----------
+// Fünf Zeilen mit Beispiel-Ideen, abwechselnd nach links/rechts laufend.
+// Jede Zeile enthält die Begriffe doppelt -> nahtlose Endlosschleife (translateX 50%).
+(function initHeroMarquee() {
+const wrap = document.querySelector(".hero-marquee");
+if (!wrap) return;
 
-const BLUE = "rgba(37, 99, 235, 0.9)";
-const GRAY = "rgba(100, 116, 139, 0.55)";
-const ACCENT_WEIGHT = 1;
-const GAP = 7;
-const SPEED = 30;
+// Eine Zeile pro Kategorie – abwechselnd nach rechts/links.
+const rows = [
+// Halter & Ständer
+["Zahnbürstenhalter", "Handyständer", "Kopfhörerhalter", "Tabletständer", "Fernbedienungshalter", "Brillenhalter", "Flaschenhalter", "Stifthalter", "Kopfhörerständer", "Ladekabel-Halter"],
+// Organizer & Ordnung
+["Schreibtisch-Organizer", "Schubladen-Einsatz", "Sortierbox", "Kabelbox", "Werkzeug-Organizer", "Kosmetik-Organizer", "Besteckeinsatz", "Schraubensortierer", "Briefablage", "Make-up-Halter"],
+// Ersatzteile & Reparatur
+["Ersatzknopf", "Möbelgleiter", "Schubladengriff", "Gehäusedeckel", "Ersatzclip", "Ersatz-Zahnrad", "Batteriefachdeckel", "Standfuss", "Distanzhalter", "Kurbelgriff"],
+// Küche & Haushalt
+["Gewürzregal", "Küchenrollenhalter", "Eierbecher", "Untersetzer", "Serviettenhalter", "Tubenquetscher", "Flaschenöffner", "Vorratsdosen-Deckel", "Messerhalter", "Kaffeekapsel-Halter"],
+// Büro & Technik
+["Monitorerhöhung", "Laptopständer", "Ladestation", "Kabeldurchführung", "Kabelhalter", "Handyhalter fürs Auto", "Webcam-Halter", "Headset-Haken", "USB-Hub-Halter", "Notizzettel-Box"],
+// Hobby & Gaming
+["Würfelturm", "Brettspiel-Organizer", "Kartenhalter", "Controller-Halter", "Miniatur-Figuren", "Cosplay-Teile", "Modellbau-Teile", "Displayständer", "Vinyl-Halter", "Würfel-Tablett"],
+// Garten & Deko
+["Pflanzenschild", "Übertopf", "Vogelhaus", "Kräutertopf", "Rankhilfe", "Gartenwerkzeug-Halter", "Vase", "Bilderrahmen", "Windlicht", "Untersetzer-Set"],
+// Persönliches & Geschenke
+["Schlüsselanhänger", "Namensschild", "Keksausstecher", "Lesezeichen", "Initialen-Deko", "Schmuckständer", "Geschenkbox", "Tischkartenhalter", "Foto-Würfel", "Ringschale"],
+];
+const durations = [60, 72, 64, 78, 66, 74, 62, 70];
 
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-let pixels = [];
-let raf = 0;
-let lastFrame = 0;
-
-function palette() {
-const list = [];
-for (let i = 0; i < 6; i++) list.push(i < ACCENT_WEIGHT ? BLUE : GRAY);
-return list;
-}
-
-function createPixel(x, y, color, baseSpeed, delay) {
-const rand = (min, max) => Math.random() * (max - min) + min;
-return {
-x, y, color,
-speed: rand(0.08, 0.4) * baseSpeed,
-size: 0,
-sizeStep: rand(0.12, 0.28),
-minSize: 0.5,
-maxSizeInt: 2,
-maxSize: rand(0.5, 2),
-delay,
-counter: 0,
-counterStep: rand(1.8, 3.2) + (canvas.width + canvas.height) * 0.008,
-isReverse: false,
-isShimmer: false,
-draw() {
-const offset = this.maxSizeInt * 0.5 - this.size * 0.5;
-ctx.fillStyle = this.color;
-ctx.fillRect(this.x + offset, this.y + offset, this.size, this.size);
-},
-appear() {
-if (this.counter <= this.delay) {
-this.counter += this.counterStep;
-return;
-}
-if (this.size >= this.maxSize) this.isShimmer = true;
-if (this.isShimmer) this.shimmer();
-else this.size += this.sizeStep;
-this.draw();
-},
-shimmer() {
-if (this.size >= this.maxSize) this.isReverse = true;
-else if (this.size <= this.minSize) this.isReverse = false;
-if (this.isReverse) this.size -= this.speed;
-else this.size += this.speed;
-},
-};
-}
-
-function init() {
-const { width, height } = hero.getBoundingClientRect();
-const w = Math.max(1, Math.floor(width));
-const h = Math.max(1, Math.floor(height));
-canvas.width = w;
-canvas.height = h;
-canvas.style.width = w + "px";
-canvas.style.height = h + "px";
-
-const effectiveSpeed = reducedMotion ? 0 : Math.min(SPEED, 100) * 0.001;
-const pal = palette();
-const list = [];
-for (let x = 0; x < w; x += GAP) {
-for (let y = 0; y < h; y += GAP) {
-const color = pal[Math.floor(Math.random() * pal.length)];
-const dx = x - w / 2;
-const dy = y - h / 2;
-const delay = reducedMotion ? 0 : Math.sqrt(dx * dx + dy * dy) * 0.55;
-list.push(createPixel(x, y, color, effectiveSpeed, delay));
-}
-}
-pixels = list;
-}
-
-function loop() {
-raf = requestAnimationFrame(loop);
-const now = performance.now();
-const frameInterval = 1000 / 60;
-const elapsed = now - lastFrame;
-if (elapsed < frameInterval) return;
-lastFrame = now - (elapsed % frameInterval);
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-for (const p of pixels) p.appear();
-}
-
-init();
-raf = requestAnimationFrame(loop);
-const ro = new ResizeObserver(() => init());
-ro.observe(hero);
+rows.forEach((terms, i) => {
+const row = document.createElement("div");
+row.className = "marquee-row";
+const track = document.createElement("div");
+// gerade Zeilen (0,2,4) nach rechts, ungerade (1,3) nach links
+track.className = "marquee-track" + (i % 2 === 0 ? " rtl" : "");
+track.style.setProperty("--dur", durations[i] + "s");
+const group = terms.map((t) => `<span class="mq-item">${t}</span>`).join("");
+track.innerHTML = group + group; // verdoppeln für nahtlose Schleife
+row.appendChild(track);
+wrap.appendChild(row);
+});
 })();
 
 // ---------- FAQ accordion ----------
@@ -166,10 +104,10 @@ options: [
 print: {
 label: "Druckgrösse", mc: true, note: "Versandkosten werden separat kalkuliert.",
 options: [
-{ icon: "🔹", label: "Klein", sub: "bis ~10 cm", min: 5, max: 10 },
-{ icon: "🔶", label: "Mittel", sub: "bis ~20 cm", min: 10, max: 20 },
-{ icon: "📦", label: "Gross", sub: "bis ~35 cm", min: 20, max: 45 },
-{ icon: "🏭", label: "Riesig", sub: "über 35 cm", min: 45, max: 70 },
+{ icon: "🔹", label: "Klein", sub: "bis 5 × 5 × 5 cm", min: 5, max: 10 },
+{ icon: "🔶", label: "Mittel", sub: "bis 10 × 10 × 10 cm", min: 10, max: 20 },
+{ icon: "📦", label: "Gross", sub: "bis 15 × 15 × 15 cm", min: 20, max: 45 },
+{ icon: "🏭", label: "Riesig", sub: "bis 25 × 25 × 25 cm", min: 45, max: 70 },
 ],
 },
 both: {
