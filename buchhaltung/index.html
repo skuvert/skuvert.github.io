@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skuvert · Buchhaltung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Skuvert Design-Tokens (identisch zu Website + Dashboard) ---------- */
+  :root{
+    --bg:#EDF1F7; --surface:#fff; --ink:#0F172A; --muted:#64748B;
+    --accent:#2563EB; --border:#E5E9F0; --green:#16A34A; --red:#DC2626;
+    --font:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.5}
+  button,input,select{font:inherit;color:inherit}
+  input,select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;width:100%}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+
+  /* ---------- Kopfzeile ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .brand .dot{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+  .brand small{font-weight:500;color:var(--muted);font-size:14px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;padding:10px 18px;font-size:14px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#1e55d6}
+  .btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--border)}
+  .btn-secondary:hover{background:var(--bg)}
+  .btn-ghost{background:transparent;color:var(--muted);padding:8px 12px}
+  .btn-ghost:hover{color:var(--ink)}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .toolbar .yearsel{width:auto;min-width:120px}
+
+  /* ---------- Karten ---------- */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+  .stat .val{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .stat.in .val{color:var(--green)} .stat.out .val{color:var(--red)}
+  .stat.profit .val{color:var(--accent)}
+
+  /* ---------- Kopfdaten-Editor ---------- */
+  details.profile{margin-bottom:14px}
+  details.profile summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);list-style:none;display:inline-flex;align-items:center;gap:6px}
+  details.profile summary::-webkit-details-marker{display:none}
+  details.profile[open] summary{color:var(--ink)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .mt{margin-top:12px}
+
+  /* ---------- Formular ---------- */
+  #form{margin-bottom:16px}
+  #form .row{display:grid;grid-template-columns:150px 130px 1fr 1fr;gap:12px}
+  #form .row2{display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;margin-top:12px}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);padding-bottom:9px}
+  .check input{width:auto}
+
+  /* ---------- Tabelle ---------- */
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:0 10px 10px;border-bottom:1px solid var(--border)}
+  td{padding:11px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  td.amt.in{color:var(--green)} td.amt.out{color:var(--red)}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--bg);color:var(--muted)}
+  .rowbtns{display:flex;gap:4px;justify-content:flex-end}
+  .iconbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);padding:4px 7px;border-radius:8px;font-size:13px}
+  .iconbtn:hover{background:var(--bg);color:var(--ink)}
+  .empty{text-align:center;color:var(--muted);padding:40px 10px}
+  .foot{font-size:13px;color:var(--muted);margin-top:14px;text-align:center}
+  .hint{font-size:13px;color:var(--muted);margin-top:8px}
+
+  /* ---------- Druck-Kopf (nur beim Drucken sichtbar) ---------- */
+  .printhead{display:none}
+
+  @media(max-width:720px){
+    .cards{grid-template-columns:1fr}
+    #form .row,#form .row2,.grid2,.grid3{grid-template-columns:1fr}
+    .hide-sm{display:none}
+  }
+
+  /* =================== DRUCK / PDF =================== */
+  @media print{
+    @page{margin:16mm}
+    body{background:#fff}
+    .no-print{display:none!important}
+    .wrap{max-width:none;padding:0}
+    .card{border:none;box-shadow:none;padding:0;border-radius:0}
+    .printhead{display:block;margin-bottom:18px}
+    .printhead .biz{font-size:20px;font-weight:700}
+    .printhead .addr{font-size:13px;color:#333;white-space:pre-line;margin-top:2px}
+    .printhead .id{font-size:13px;color:#333;margin-top:4px}
+    .printhead h1{font-size:18px;margin:18px 0 2px}
+    .printhead .period{font-size:13px;color:#333;margin:0}
+    .cards{display:flex;gap:24px;margin:14px 0 18px}
+    .stat .val{font-size:18px}
+    .card.tablecard{page-break-inside:auto}
+    tr{page-break-inside:avoid}
+    th{color:#000}
+    td{border-color:#ccc}
+    .printfoot{display:block!important;margin-top:32px;font-size:12px;color:#333}
+    .printfoot .sig{margin-top:44px;border-top:1px solid #999;width:230px;padding-top:5px}
+  }
+  .printfoot{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Kopfzeile -->
+  <div class="topbar no-print">
+    <div class="brand"><span class="dot">S</span> Skuvert <small>· Buchhaltung</small></div>
+    <div class="toolbar">
+      <select id="yearsel" class="yearsel" aria-label="Jahr"></select>
+      <button class="btn btn-secondary" id="btnAdd">＋ Eintrag</button>
+      <button class="btn btn-secondary" id="btnBackup">⤓ Backup</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn btn-primary" id="btnPrint">PDF / Drucken</button>
+    </div>
+  </div>
+
+  <!-- Kopfdaten (für PDF-Kopf) -->
+  <details class="profile no-print">
+    <summary>▸ Kopfdaten (erscheinen auf dem PDF)</summary>
+    <div class="card mt">
+      <div class="grid2">
+        <div><label>Name / Firma</label><input id="p_name" placeholder="Simon Kull – Skuvert"></div>
+        <div><label>UID / Steuer-Nr. (optional, sobald vorhanden)</label><input id="p_id" placeholder="z. B. CHE-123.456.789"></div>
+      </div>
+      <div class="mt"><label>Adresse</label><input id="p_addr" placeholder="Strasse Nr., PLZ Ort"></div>
+      <div class="grid2 mt">
+        <div><label>Ort (für Unterschrift)</label><input id="p_place" placeholder="z. B. Luzern"></div>
+        <div><label>Konto / IBAN (optional)</label><input id="p_iban" placeholder="CH.. .... .... .... .... ."></div>
+      </div>
+      <p class="hint">Wird lokal in deinem Browser gespeichert und oben auf das PDF gedruckt.</p>
+    </div>
+  </details>
+
+  <!-- Formular -->
+  <div class="card no-print" id="form" hidden>
+    <p class="eyebrow" id="formTitle">Neuer Eintrag</p>
+    <div class="row">
+      <div><label>Datum</label><input type="date" id="f_date"></div>
+      <div><label>Art</label><select id="f_type"><option value="in">Einnahme</option><option value="out">Ausgabe</option></select></div>
+      <div><label>Betrag (CHF)</label><input type="number" id="f_amount" step="0.05" min="0" inputmode="decimal" placeholder="0.00"></div>
+      <div><label>Kategorie</label><input id="f_cat" list="cats" placeholder="z. B. Auftragsarbeit">
+        <datalist id="cats">
+          <option>Auftragsarbeit</option><option>Produktverkauf</option><option>Filament / Material</option>
+          <option>Verpackung / Versand</option><option>Strom / Drucker</option><option>Werkzeug / Ersatzteile</option>
+          <option>Gebühren</option><option>Sonstiges</option>
+        </datalist>
+      </div>
+    </div>
+    <div class="row2">
+      <div><label>Beschreibung</label><input id="f_desc" placeholder="z. B. Missortier-Behälter, 12 Stk."></div>
+      <div><label>Kunde / Quelle</label><input id="f_party" placeholder="z. B. Firma XY / MakerWorld"></div>
+      <label class="check"><input type="checkbox" id="f_receipt" checked> Beleg vorhanden</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" id="btnSave">Speichern</button>
+        <button class="btn btn-ghost" id="btnCancel">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF-Kopf -->
+  <div class="printhead">
+    <div class="biz" id="ph_name"></div>
+    <div class="addr" id="ph_addr"></div>
+    <div class="id" id="ph_id"></div>
+    <h1 id="ph_title"></h1>
+    <p class="period" id="ph_period"></p>
+  </div>
+
+  <!-- Kennzahlen -->
+  <div class="cards">
+    <div class="card stat in"><p class="eyebrow">Einnahmen</p><div class="val" id="s_in">–</div></div>
+    <div class="card stat out"><p class="eyebrow">Ausgaben</p><div class="val" id="s_out">–</div></div>
+    <div class="card stat profit"><p class="eyebrow">Gewinn (steuerbar)</p><div class="val" id="s_profit">–</div></div>
+  </div>
+
+  <!-- Tabelle -->
+  <div class="card tablecard">
+    <table>
+      <thead><tr>
+        <th>Datum</th><th>Beschreibung</th><th class="hide-sm">Kategorie</th><th class="hide-sm">Kunde / Quelle</th>
+        <th style="text-align:right">Betrag</th><th class="no-print"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="emptyState" class="empty">Noch keine Einträge. Klick oben auf <b>＋ Eintrag</b>.</div>
+  </div>
+
+  <p class="foot no-print">Alle Daten bleiben lokal auf diesem Gerät. Mach regelmässig ein <b>Backup</b> (JSON) — z. B. in deine OneDrive.</p>
+
+  <!-- Druck-Fuss -->
+  <div class="printfoot">
+    <div id="pf_meta"></div>
+    <div class="sig" id="pf_sig"></div>
+    <div style="margin-top:14px;color:#888">Erstellt mit Skuvert Buchhaltung · Einnahmen-/Ausgaben-Rechnung nach Art. 957 OR (vereinfachte Buchführung).</div>
+  </div>
+</div>
+
+<script>
+/* ============ Speicher ============ */
+const K_ENTRIES="skuvert_buchhaltung_entries", K_PROFILE="skuvert_buchhaltung_profile";
+let entries=load(K_ENTRIES,[]);
+let profile=load(K_PROFILE,{name:"",addr:"",id:"",place:"",iban:""});
+let editingId=null;
+
+function load(k,def){try{const v=JSON.parse(localStorage.getItem(k));return v??def}catch{return def}}
+function save(){try{localStorage.setItem(K_ENTRIES,JSON.stringify(entries));localStorage.setItem(K_PROFILE,JSON.stringify(profile))}catch(e){alert("Speichern fehlgeschlagen: "+e.message)}}
+
+/* ============ Formatierung (Schweiz) ============ */
+const chf=new Intl.NumberFormat("de-CH",{style:"currency",currency:"CHF"});
+function fmtCHF(n){return chf.format(n||0)}
+function fmtDate(iso){if(!iso)return"";const[y,m,d]=iso.split("-");return `${d}.${m}.${y}`}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* ============ Berechnung ============ */
+function totals(list){
+  let i=0,o=0;
+  for(const e of list){ if(e.type==="in") i+=e.amount; else o+=e.amount; }
+  return {in:i,out:o,profit:i-o};
+}
+function yearsWithData(){
+  const s=new Set(entries.map(e=>e.date.slice(0,4)));
+  s.add(String(new Date().getFullYear()));
+  return [...s].sort().reverse();
+}
+function currentYear(){return document.getElementById("yearsel").value}
+function forYear(){return entries.filter(e=>e.date.slice(0,4)===currentYear()).sort((a,b)=>a.date.localeCompare(b.date))}
+
+/* ============ Rendern ============ */
+function renderYears(){
+  const sel=document.getElementById("yearsel"), keep=sel.value;
+  sel.innerHTML=yearsWithData().map(y=>`<option>${y}</option>`).join("");
+  if([...sel.options].some(o=>o.value===keep)) sel.value=keep;
+}
+function render(){
+  const list=forYear(), t=totals(list);
+  document.getElementById("s_in").textContent=fmtCHF(t.in);
+  document.getElementById("s_out").textContent=fmtCHF(t.out);
+  document.getElementById("s_profit").textContent=fmtCHF(t.profit);
+
+  const tb=document.getElementById("tbody");
+  tb.innerHTML=list.map(e=>`
+    <tr>
+      <td style="white-space:nowrap">${fmtDate(e.date)}</td>
+      <td>${esc(e.desc)||"<span style='color:var(--muted)'>—</span>"}${e.receipt?"":" <span class='tag'>kein Beleg</span>"}</td>
+      <td class="hide-sm">${e.cat?`<span class="tag">${esc(e.cat)}</span>`:""}</td>
+      <td class="hide-sm">${esc(e.party)}</td>
+      <td class="amt ${e.type}">${e.type==="out"?"−":""}${fmtCHF(e.amount)}</td>
+      <td class="no-print"><div class="rowbtns">
+        <button class="iconbtn" data-edit="${e.id}" title="Bearbeiten">✎</button>
+        <button class="iconbtn" data-del="${e.id}" title="Löschen">✕</button>
+      </div></td>
+    </tr>`).join("");
+  document.getElementById("emptyState").hidden=list.length>0;
+  renderPrintHead(list);
+}
+function renderPrintHead(list){
+  const y=currentYear();
+  document.getElementById("ph_name").textContent=profile.name||"Skuvert – Buchhaltung";
+  document.getElementById("ph_addr").textContent=profile.addr||"";
+  document.getElementById("ph_id").textContent=profile.id?("UID / Steuer-Nr.: "+profile.id):"";
+  document.getElementById("ph_title").textContent="Einnahmen- und Ausgaben-Rechnung "+y;
+  const dates=list.map(e=>e.date).sort();
+  document.getElementById("ph_period").textContent=dates.length?`Zeitraum: ${fmtDate(dates[0])} – ${fmtDate(dates[dates.length-1])} · ${list.length} Einträge`:`Zeitraum: 01.01.${y} – 31.12.${y}`;
+  const today=fmtDate(new Date().toISOString().slice(0,10));
+  document.getElementById("pf_meta").textContent=`${profile.place?profile.place+", ":""}${today}`;
+  document.getElementById("pf_sig").textContent=(profile.name||"")+"  ·  Unterschrift";
+}
+
+/* ============ Formular ============ */
+function openForm(entry){
+  const f=document.getElementById("form");
+  editingId=entry?entry.id:null;
+  document.getElementById("formTitle").textContent=entry?"Eintrag bearbeiten":"Neuer Eintrag";
+  document.getElementById("f_date").value=entry?entry.date:new Date().toISOString().slice(0,10);
+  document.getElementById("f_type").value=entry?entry.type:"in";
+  document.getElementById("f_amount").value=entry?entry.amount:"";
+  document.getElementById("f_cat").value=entry?entry.cat:"";
+  document.getElementById("f_desc").value=entry?entry.desc:"";
+  document.getElementById("f_party").value=entry?entry.party:"";
+  document.getElementById("f_receipt").checked=entry?!!entry.receipt:true;
+  f.hidden=false; f.scrollIntoView({behavior:"smooth",block:"nearest"});
+  document.getElementById("f_amount").focus();
+}
+function closeForm(){document.getElementById("form").hidden=true;editingId=null}
+function saveEntry(){
+  const amount=parseFloat(document.getElementById("f_amount").value);
+  const date=document.getElementById("f_date").value;
+  if(!date||!(amount>0)){alert("Bitte Datum und einen Betrag > 0 eingeben.");return}
+  const data={
+    date, type:document.getElementById("f_type").value, amount:Math.round(amount*100)/100,
+    cat:document.getElementById("f_cat").value.trim(), desc:document.getElementById("f_desc").value.trim(),
+    party:document.getElementById("f_party").value.trim(), receipt:document.getElementById("f_receipt").checked,
+  };
+  if(editingId){ const e=entries.find(x=>x.id===editingId); Object.assign(e,data); }
+  else { entries.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),...data}); }
+  save(); document.getElementById("yearsel").value=date.slice(0,4); renderYears(); render(); closeForm();
+}
+
+/* ============ Backup (JSON) ============ */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify({entries,profile,exported:new Date().toISOString()},null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`skuvert-buchhaltung-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!Array.isArray(d.entries))throw new Error("Kein gültiges Backup.");
+      const have=new Set(entries.map(e=>e.id)); let added=0;
+      for(const e of d.entries){ if(!have.has(e.id)){entries.push(e);added++;} }
+      if(d.profile&&!profile.name){profile=d.profile;fillProfile();}
+      save(); renderYears(); render();
+      alert(`Backup geladen: ${added} neue Einträge hinzugefügt.`);
+    }catch(e){alert("Import fehlgeschlagen: "+e.message)}
+  };
+  r.readAsText(file);
+}
+
+/* ============ Kopfdaten binden ============ */
+function fillProfile(){
+  p_name.value=profile.name; p_addr.value=profile.addr; p_id.value=profile.id;
+  p_place.value=profile.place; p_iban.value=profile.iban;
+}
+["name","addr","id","place","iban"].forEach(k=>{
+  const el=document.getElementById("p_"+k);
+  el.addEventListener("input",()=>{profile[k]=el.value;save();renderPrintHead(forYear());});
+});
+
+/* ============ Events ============ */
+document.getElementById("btnAdd").onclick=()=>openForm(null);
+document.getElementById("btnCancel").onclick=closeForm;
+document.getElementById("btnSave").onclick=saveEntry;
+document.getElementById("btnPrint").onclick=()=>{renderPrintHead(forYear());window.print()};
+document.getElementById("btnBackup").onclick=()=>{
+  if(confirm("OK = Backup speichern (JSON).\nAbbrechen = stattdessen ein Backup laden."))exportBackup();
+  else document.getElementById("importFile").click();
+};
+document.getElementById("importFile").onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=""};
+document.getElementById("yearsel").onchange=render;
+document.getElementById("tbody").onclick=e=>{
+  const ed=e.target.dataset.edit, dl=e.target.dataset.del;
+  if(ed)openForm(entries.find(x=>x.id===ed));
+  if(dl&&confirm("Diesen Eintrag löschen?")){entries=entries.filter(x=>x.id!==dl);save();renderYears();render()}
+};
+document.getElementById("form").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName!=="TEXTAREA")saveEntry();if(e.key==="Escape")closeForm()});
+
+/* ============ Selbsttest: Datei mit ?test öffnen ============ */
+function selfTest(){
+  console.assert(/CHF/.test(fmtCHF(1234.5))&&/1.234/.test(fmtCHF(1234.5)),"CHF-Format",fmtCHF(1234.5));
+  const t=totals([{type:"in",amount:1000},{type:"out",amount:250},{type:"in",amount:50.5}]);
+  console.assert(t.in===1050.5&&t.out===250&&t.profit===800.5,"Totals falsch",t);
+  console.assert(fmtDate("2026-09-09")==="09.09.2026","Datum falsch",fmtDate("2026-09-09"));
+  console.log("Selbsttest ✓ (Format:",fmtCHF(1234.5),")");
+}
+
+/* ============ Start ============ */
+fillProfile(); renderYears(); render();
+if(location.search.includes("test"))selfTest();
+</script>
+</body>
+</html>
