@@ -91,6 +91,26 @@ const ACCENT = "#2E5E8F";
 // erzeugt – diese ist NICHT fortlaufend und dient nur als Notlösung.
 const ORDER_NUMBER_ENDPOINT = "https://script.google.com/macros/s/AKfycbytNMII6Emuk3LqKDG3DLNKBRjD94b5UcWeX1wN2PHt6UuQQl2_pcY7AsJ4Dj_pE5f5ww/exec";
 
+// ===== Filament-Bestand (Sync mit dem Dashboard) =====
+// Read-only Endpoint des Dashboards. Liefert nur vorrätige Farben je Material.
+// Ist er erreichbar, ersetzen seine Farben die unten hardcodierten Defaults;
+// sonst bleiben die Defaults (MATERIALS) als Fallback bestehen.
+const FILAMENT_ENDPOINT = "https://dashboard.skuvert.ch/api/filament";
+let inventory = null; // { PLA:[{n,h}], PETG:[...], ... } sobald geladen
+
+function loadInventory() {
+if (!FILAMENT_ENDPOINT) return;
+fetch(FILAMENT_ENDPOINT)
+.then((r) => (r.ok ? r.json() : null))
+.then((d) => {
+if (d && d.materials) {
+inventory = d.materials;
+if (s.stepId === "material") render(); // schon offen? aktualisieren
+}
+})
+.catch(() => {}); // offline -> Fallback auf Defaults
+}
+
 // kleiner Helfer: Inline-SVG-Icon aus dem Sprite (kein Emoji mehr)
 function svg(id) { return `<svg class="icon"><use href="#${id}"/></svg>`; }
 
@@ -182,9 +202,31 @@ TPU: { desc: "Flexibles, gummiartiges Material – ideal für Schutzhüllen, Dic
 ABS: { desc: "UV- und wetterbeständig – für Aussenanwendungen, Schilder und alles, was Sonne, Regen und Temperaturwechsel standhält.", colors: [{ n: "Schwarz", h: "#1a1a1a" }, { n: "Weiss", h: "#f0f0f0" }] },
 };
 
+// Effektive Materialliste: vorrätige Farben aus dem Dashboard, sonst Defaults.
+// Beschreibung (desc) bleibt immer statisch aus MATERIALS.
+function effectiveMaterials() {
+const out = {};
+for (const m of Object.keys(MATERIALS)) {
+const colors = inventory && Array.isArray(inventory[m]) ? inventory[m] : MATERIALS[m].colors;
+out[m] = { desc: MATERIALS[m].desc, colors };
+}
+return out;
+}
+// Welche Material-Chips im Formular sichtbar sind:
+// Einzelauftrag -> nur Materialien mit vorrätiger Farbe; Kleinserie -> alle
+// (Wunschfarbe kann bestellt werden, auch wenn nichts am Lager ist).
+function materialList() {
+const all = Object.keys(MATERIALS);
+if (s.orderType === "series") return all;
+const mats = effectiveMaterials();
+const inStock = all.filter((m) => mats[m].colors.length > 0);
+return inStock.length ? inStock : all;
+}
+const CUSTOM_COLOR_NOTE = "Nicht-Lagerfarben bestelle ich extra für dich – die Lieferung kann dadurch 3–7 Arbeitstage länger dauern.";
+
 const initialState = {
-stepId: "type", orderType: null, service: null, priceIdx: null,
-name: "", description: "", qty: "", material: "PLA", colors: [],
+stepId: "project", orderType: "single", service: null, priceIdx: null,
+name: "", description: "", qty: "", material: "PLA", colors: [], customColor: "",
 firstName: "", lastName: "", email: "", phone: "", notes: "",
 payment: null, invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
@@ -192,9 +234,10 @@ agb: false, sent: false, orderNo: null,
 let s = { ...initialState };
 
 // Reihenfolge der Schritte – "material" entfällt bei "Nur Design".
-const STEP_LABEL = { type: "Auftrag", service: "Service", model: "Modell", material: "Material", contact: "Kontakt" };
+// "project" fasst Auftragstyp + Service in einem Schritt zusammen (5 -> 4 Schritte).
+const STEP_LABEL = { project: "Projekt", model: "Modell", material: "Material", contact: "Kontakt" };
 function steps() {
-const list = ["type", "service", "model"];
+const list = ["project", "model"];
 if (s.service !== "design") list.push("material");
 list.push("contact");
 return list;
@@ -349,6 +392,9 @@ m += `\nMATERIAL & FARBE\n`;
 m += `Material : ${s.material}\n`;
 m += `Farbe(n) : ${s.colors.length ? s.colors.join(", ") : "-"}\n`;
 if (surcharge > 0) m += `Mehrfarbig : Ja (${s.colors.length} Farben, +${surcharge} CHF)\n`;
+if (s.orderType === "series" && s.customColor.trim()) {
+m += `Wunschfarbe : ${s.customColor.trim()} (nicht am Lager – wird bestellt, Lieferung +3–7 Arbeitstage)\n`;
+}
 }
 m += `\nGESCHÄTZTE PREISRANGE: ${priceText}\n(Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.)\n`;
 m += `\nZAHLUNG\n`;
@@ -406,42 +452,42 @@ return `<label class="rf-label">${esc(text)} ${required ? '<span class="req">*</
 function progressHtml() {
 const list = steps();
 const cur = list.indexOf(s.stepId);
-return `<div class="progress-row">${list
-.map((id, idx) => {
-const cls = idx === cur ? "active" : idx < cur ? "done" : "";
-return `<div class="progress-step ${cls}"><div class="progress-bar"></div><span class="progress-label">${STEP_LABEL[id]}</span></div>`;
-})
-.join("")}</div>`;
-}
-
-function priceBannerHtml() {
-const known = s.service !== null && s.priceIdx !== null;
-return `<div class="price-banner">
-<div><div class="label">Geschätzter Preis</div><div class="value${known ? " known" : ""}">${priceRangeText()}</div></div>
+return `<div class="rf-progress">
+<div class="rf-bars">${list.map((id, idx) => `<div class="rf-seg ${idx < cur ? "done" : idx === cur ? "cur" : ""}"></div>`).join("")}</div>
+<div class="rf-steplabels">${list.map((id, idx) => `<span class="${idx === cur ? "cur" : idx < cur ? "done" : ""}">${STEP_LABEL[id]}</span>`).join("")}</div>
 </div>`;
 }
 
-// ===== SCHRITT 0 (NEU): Auftragstyp =====
-function stepTypeHtml() {
-return `<div>
-<div class="rf-title">Auftragstyp</div>
-<div class="rf-subtitle">Wähle, wie viel du drucken lassen möchtest. Das bestimmt später deine Zahlungsoptionen.</div>
-<div class="opt-list">
-${ORDER_TYPES.map(
-(o) => `<div class="opt-row${s.orderType === o.key ? " selected" : ""}" data-ordertype="${o.key}">
-<span class="opt-ic">${svg(o.icon)}</span>
-<div><div class="title">${esc(o.title)}</div><div class="desc">${esc(o.desc)}</div></div>
-</div>`
-).join("")}
+// Mitlaufende Zusammenfassung + Richtpreis (rechte Spalte, immer sichtbar).
+function sideSummaryHtml() {
+const priceKnown = s.service !== null && s.priceIdx !== null;
+const val = (v) => (v ? `<span class="v">${esc(v)}</span>` : `<span class="v dim">noch offen</span>`);
+const colorSummary = [s.colors.join(", "), s.orderType === "series" && s.customColor.trim() ? "Wunsch: " + s.customColor.trim() : ""].filter(Boolean).join(" · ");
+const matValue = s.material + (colorSummary ? " · " + colorSummary : "");
+return `<div class="side-head">Deine Anfrage</div>
+<div class="side-body">
+<div class="side-row"><span class="k">Auftragstyp</span>${val(s.orderType ? ORDER_TYPE_LABEL[s.orderType] : "")}</div>
+<div class="side-row"><span class="k">Service</span>${val(s.service ? SVC_LABEL[s.service] : "")}</div>
+<div class="side-row"><span class="k">Objekt</span>${val(s.name)}</div>
+${s.service && s.service !== "design" ? `<div class="side-row"><span class="k">Material</span>${val(matValue)}</div>` : ""}
 </div>
-<div class="nav-row end-only"><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
-</div>`;
+<div class="side-price">
+<div class="pl">Geschätzter Preis</div>
+<div class="pv${priceKnown ? "" : " dim"}">${priceKnown ? esc(priceRangeText()) : "CHF –"}</div>
+<div class="ph">Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.</div>
+</div>
+<div class="side-assure">${svg("icon-info")} Antwort meist innert 24 Stunden.</div>`;
 }
 
-function stepServiceHtml() {
+// ===== SCHRITT 1: Projekt (Auftragstyp-Umschalter + Service) =====
+const TYPE_TOGGLE = [{ key: "single", label: "Einzelauftrag" }, { key: "series", label: "Kleinserie (ab 10)" }];
+function stepProjectHtml() {
 return `<div>
-<div class="rf-title">Was benötigst du?</div>
-<div class="rf-subtitle">Wähle den Service, der zu deinem Projekt passt.</div>
+<div class="seg-toggle">
+${TYPE_TOGGLE.map((o) => `<button type="button" class="seg-opt${s.orderType === o.key ? " on" : ""}" data-ordertype="${o.key}">${esc(o.label)}</button>`).join("")}
+</div>
+<div class="rf-title">Was brauchst du?</div>
+<div class="rf-subtitle">Wähle den Service – den Rest klären wir Schritt für Schritt.</div>
 <div class="service-list">
 ${SERVICES.map(
 (svc) => `<div class="service-option${s.service === svc.key ? " selected" : ""}" data-service="${svc.key}">
@@ -450,7 +496,8 @@ ${SERVICES.map(
 </div>`
 ).join("")}
 </div>
-<div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
+<div class="notice-box compact" style="margin-top:18px"><span class="n-ic">${svg("icon-info")}</span><p>Du kannst jederzeit einen Schritt zurück – deine Angaben bleiben erhalten.</p></div>
+<div class="nav-row end-only"><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
 </div>`;
 }
 
@@ -485,24 +532,35 @@ ${data.options.map(
 }
 
 function stepMaterialHtml() {
-const mat = MATERIALS[s.material];
+const mats = effectiveMaterials();
+const keys = materialList();
+if (!keys.includes(s.material)) { s.material = keys[0]; s.colors = []; } // gewähltes Material nicht (mehr) verfügbar
+const mat = mats[s.material];
 const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
+const series = s.orderType === "series";
+const colorLabel = series
+? "Farbe (vorrätige anklickbar – oder Wunschfarbe unten)"
+: "Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)";
 return `<div>
 <div class="rf-title">Material &amp; Farbe</div>
 <div class="rf-subtitle">Alle Materialien werden auf meinen Bambu Lab-Druckern verarbeitet.</div>
 <div class="rf-field">${label("Material", true)}
-<div class="chip-row">${Object.keys(MATERIALS).map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
+<div class="chip-row">${keys.map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
 <div class="mat-desc">${esc(mat.desc)}</div>
 </div>
-<div class="rf-field">${label("Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)", true)}
-<div class="color-row">${mat.colors.map(
+<div class="rf-field">${label(colorLabel, !series)}
+<div class="color-row">${mat.colors.length ? mat.colors.map(
 (c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
 <div class="color-swatch" style="background:${c.h}"></div>
 <span>${esc(c.n)}</span>
 </div>`
-).join("")}</div>
+).join("") : `<div class="mat-desc">Aktuell keine ${esc(s.material)}-Farbe am Lager – gib unten deine Wunschfarbe an.</div>`}</div>
 ${surcharge > 0 ? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>` : ""}
 </div>
+${series ? `<div class="rf-field">${label("Wunschfarbe (optional – nicht am Lager)")}
+<input class="rf-input" id="f-customColor" value="${esc(s.customColor)}" placeholder="z. B. RAL 5010 Enzianblau, Pantone 2925 C …">
+<div class="notice-box compact" style="margin-top:10px"><span class="n-ic">${svg("icon-info")}</span><p>${esc(CUSTOM_COLOR_NOTE)}</p></div>
+</div>` : ""}
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
 </div>`;
 }
@@ -526,13 +584,10 @@ ${s.payment === "invoice" ? `<label class="invoice-confirm" data-action="toggle-
 }
 
 function stepContactHtml() {
-const data = s.service ? PRICE_DATA[s.service] : null;
-const opt = data && s.priceIdx !== null ? data.options[s.priceIdx] : null;
-const priceText = priceRangeText();
 const ready = canSend();
 return `<div>
 <div class="rf-title">Fast geschafft</div>
-<div class="rf-subtitle">Kontaktdaten ausfüllen, Zahlungsmethode wählen und Anfrage absenden.</div>
+<div class="rf-subtitle">Kontaktdaten ausfüllen, Zahlungsmethode wählen und Anfrage absenden. Deine Angaben &amp; der Richtpreis stehen rechts.</div>
 <div class="rf-field tight" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px">
 <div>${label("Vorname", true)}<input class="rf-input" id="f-firstName" value="${esc(s.firstName)}" placeholder="Max"></div>
 <div>${label("Nachname", true)}<input class="rf-input" id="f-lastName" value="${esc(s.lastName)}" placeholder="Muster"></div>
@@ -540,20 +595,7 @@ return `<div>
 <div class="rf-field tight">${label("E-Mail", true)}<input class="rf-input" id="f-email" type="email" value="${esc(s.email)}" placeholder="max@example.com"></div>
 <div class="rf-field tight">${label("Telefon / WhatsApp")}<input class="rf-input" id="f-phone" value="${esc(s.phone)}" placeholder="+41 79 000 00 00"></div>
 <div class="rf-field">${label("Weitere Anmerkungen")}<textarea class="rf-input" id="f-notes" placeholder="Preislimit, Wunschdatum, Sonderwünsche …">${esc(s.notes)}</textarea></div>
-<div class="summary-box">
-<div class="s-title">Überblick</div>
-<div class="sum-row"><span class="k">Auftragstyp</span><span class="v">${esc(s.orderType ? ORDER_TYPE_LABEL[s.orderType] : "-")}</span></div>
-<div class="sum-row"><span class="k">Service</span><span class="v">${esc(s.service ? SVC_LABEL[s.service] : "-")}</span></div>
-<div class="sum-row"><span class="k">Objekt</span><span class="v">${esc(s.name)}</span></div>
-<div class="sum-row"><span class="k">${esc(data ? data.label : "Stufe")}</span><span class="v">${esc(opt ? opt.label : "-")}</span></div>
-${s.service !== "design" ? `<div class="sum-row"><span class="k">Material</span><span class="v">${esc(s.material)} · ${esc(s.colors.length ? s.colors.join(", ") : "-")}</span></div>` : ""}
-</div>
 ${paySelectHtml()}
-<div class="price-final">
-<div class="label">Geschätzte Preisrange</div>
-<div class="value">${priceText}</div>
-<div class="hint">Diese Angabe dient nur zur ersten Einschätzung – der finale Preis folgt persönlich mit dem Angebot.</div>
-</div>
 <div class="notice-box compact"><span class="n-ic">${svg("icon-info")}</span><p>Bitte füge Skizzen, Fotos oder 3D-Dateien <strong>direkt im Mail- oder WhatsApp-Fenster</strong> als Anhang hinzu, bevor du sendest.</p></div>
 <label class="agb-check${s.agb ? " on" : ""}" data-action="toggle-agb">
 <input type="checkbox" ${s.agb ? "checked" : ""} tabindex="-1" aria-label="AGB und Datenschutzerklärung akzeptieren" style="pointer-events:none">
@@ -579,28 +621,34 @@ ${s.orderNo ? `<div class="order-no-badge">Deine Auftragsnummer<strong>${esc(s.o
 }
 
 function render() {
-// Anker: Scrollposition der Karte merken -> kein Springen beim Schritt-Wechsel.
-const prevCard = mount.querySelector(".request-card");
-const prevTop = prevCard ? prevCard.getBoundingClientRect().top : null;
+// Anker: Scrollposition merken -> kein Springen beim Schritt-Wechsel.
+const prevAnchor = mount.querySelector(".rf-shell");
+const prevTop = prevAnchor ? prevAnchor.getBoundingClientRect().top : null;
 
-let inner;
+let html;
 if (s.sent) {
-inner = successHtml();
+html = `<div class="rf-shell"><div class="rf-main rf-main--full">${successHtml()}</div></div>`;
 } else {
-inner = progressHtml() + priceBannerHtml();
-if (s.stepId === "type") inner += stepTypeHtml();
-else if (s.stepId === "service") inner += stepServiceHtml();
-else if (s.stepId === "model") inner += stepModelHtml();
-else if (s.stepId === "material") inner += stepMaterialHtml();
-else inner += stepContactHtml();
+let step;
+if (s.stepId === "project") step = stepProjectHtml();
+else if (s.stepId === "model") step = stepModelHtml();
+else if (s.stepId === "material") step = stepMaterialHtml();
+else step = stepContactHtml();
+html = `<div class="rf-shell">
+${progressHtml()}
+<div class="rf-layout">
+<div class="rf-main">${step}</div>
+<aside class="rf-side">${sideSummaryHtml()}</aside>
+</div>
+</div>`;
 }
-mount.innerHTML = `<div class="request-card">${inner}</div>`;
+mount.innerHTML = html;
 attachListeners();
 
 if (prevTop !== null) {
-const newCard = mount.querySelector(".request-card");
-if (newCard) {
-const delta = newCard.getBoundingClientRect().top - prevTop;
+const newAnchor = mount.querySelector(".rf-shell");
+if (newAnchor) {
+const delta = newAnchor.getBoundingClientRect().top - prevTop;
 if (Math.abs(delta) > 1) window.scrollBy(0, delta);
 }
 }
@@ -613,10 +661,12 @@ if (el) el.addEventListener("input", (e) => { s[field] = e.target.value; });
 
 // Validierung des aktuellen Schritts vor "Weiter".
 function validateStep(id) {
-if (id === "type" && !s.orderType) { alert("Bitte wähle den Auftragstyp."); return false; }
-if (id === "service" && !s.service) { alert("Bitte wähle einen Service."); return false; }
+if (id === "project" && !s.service) { alert("Bitte wähle einen Service."); return false; }
 if (id === "model" && !(s.name.trim() && s.priceIdx !== null && s.description.trim())) { alert("Bitte Bezeichnung, Stufe und Beschreibung ausfüllen."); return false; }
-if (id === "material" && !(s.material && s.colors.length > 0)) { alert("Bitte Material und mindestens eine Farbe wählen."); return false; }
+if (id === "material") {
+const hasColor = s.colors.length > 0 || (s.orderType === "series" && s.customColor.trim());
+if (!s.material || !hasColor) { alert("Bitte Material und mindestens eine Farbe (oder eine Wunschfarbe) wählen."); return false; }
+}
 return true;
 }
 
@@ -684,6 +734,7 @@ act("restart", () => { s = { ...initialState }; render(); });
 bindText("f-name", "name");
 bindText("f-description", "description");
 bindText("f-qty", "qty");
+bindText("f-customColor", "customColor");
 bindText("f-firstName", "firstName");
 bindText("f-lastName", "lastName");
 bindText("f-email", "email");
@@ -694,5 +745,6 @@ bindText("f-notes", "notes");
 if (s.stepId === "contact" && !s.orderNo && !s.sent) { reserveOrderNumber(); }
 }
 
+loadInventory(); // Bestand vom Dashboard laden (Fallback: Defaults)
 render();
 })();
