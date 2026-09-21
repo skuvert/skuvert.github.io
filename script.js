@@ -95,7 +95,7 @@ const ORDER_NUMBER_ENDPOINT = "https://script.google.com/macros/s/AKfycbytNMII6E
 // Read-only Endpoint des Dashboards. Liefert nur vorrätige Farben je Material.
 // Ist er erreichbar, ersetzen seine Farben die unten hardcodierten Defaults;
 // sonst bleiben die Defaults (MATERIALS) als Fallback bestehen.
-const FILAMENT_ENDPOINT = "https://dashboard.skuvert.ch/api/filament";
+const FILAMENT_ENDPOINT = "https://skuvert-dashboard.vercel.app/api/filament";
 let inventory = null; // { PLA:[{n,h}], PETG:[...], ... } sobald geladen
 
 function loadInventory() {
