@@ -118,18 +118,17 @@ function svg(id) { return `<svg class="icon"><use href="#${id}"/></svg>`; }
 // Steuert unten die verfügbaren Zahlungsmethoden.
 const ORDER_TYPES = [
 { key: "single", icon: "icon-cube", title: "Einzelauftrag", desc: "Einzelnes Objekt oder kleine Stückzahl." },
-{ key: "series", icon: "icon-boxes", title: "Kleinserie (ab 10 Teilen)", desc: "Grössere Stückzahl – auf Wunsch mit Rechnung (Zahlung nach Erhalt)." },
+{ key: "series", icon: "icon-boxes", title: "Kleinserie (ab 7 Teilen)", desc: "Grössere Stückzahl – auf Wunsch mit Rechnung (Zahlung nach Erhalt)." },
 ];
-const ORDER_TYPE_LABEL = { single: "Einzelauftrag", series: "Kleinserie (ab 10 Teilen)" };
+const ORDER_TYPE_LABEL = { single: "Einzelauftrag", series: "Kleinserie (ab 7 Teilen)" };
 
 // ===== Zahlungsmethoden =====
 // Basis gilt für Einzelaufträge; Kleinserien erhalten zusätzlich "Rechnung".
+// Eine einfache Sammel-Option: nach der Bestätigung kommt ein Zahlungslink,
+// über den mit Karte, TWINT, Apple/Google Pay u.a. bezahlt werden kann
+// (Anbietername bewusst nicht genannt – Kunden kennen ihn oft nicht).
 const PAY_BASE = [
-{ key: "twint", label: "TWINT" },
-{ key: "revolut", label: "Revolut" },
-{ key: "paypal", label: "PayPal" },
-{ key: "bank", label: "Banküberweisung" },
-{ key: "card", label: "Kreditkarte (Stripe-Link nach Bestätigung)" },
+{ key: "link", label: "Zahlungslink – Karte, TWINT, Apple/Google Pay u. a. (nach Bestätigung)" },
 ];
 const PAY_INVOICE = { key: "invoice", label: "Rechnung (Zahlung nach Erhalt)" };
 const INVOICE_TEXT = "Ich bestätige verbindlich, dass ich mich mit Absenden dieser Anfrage zur Zahlung der Rechnung nach Erhalt der Ware verpflichte, sofern das Angebot von mir bestätigt wurde. Zahlungsziel: 14 Tage nach Rechnungsstellung.";
@@ -222,13 +221,48 @@ const mats = effectiveMaterials();
 const inStock = all.filter((m) => mats[m].colors.length > 0);
 return inStock.length ? inStock : all;
 }
-const CUSTOM_COLOR_NOTE = "Nicht-Lagerfarben bestelle ich extra für dich – die Lieferung kann dadurch 3–7 Arbeitstage länger dauern.";
+const CUSTOM_COLOR_NOTE = "Für Kleinserien bestelle ich die gewünschte Farbe frisch für dich – die Lieferung kann dadurch 3–7 Arbeitstage länger dauern.";
+
+// Vollständige Bambu-Lab-Farbpaletten (offizielle Namen + Hex, Stand 2026).
+// Wird NUR bei Kleinserie angezeigt (dort kann jede Farbe bestellt werden);
+// beim Einzelauftrag gilt weiter der Lagerbestand aus dem Dashboard.
+const BAMBU_COLORS = {
+PLA: [
+{ n: "Jade White", h: "#FFFFFF" }, { n: "Beige", h: "#F7E6DE" }, { n: "Light Gray", h: "#D1D3D5" },
+{ n: "Silver", h: "#A6A9AA" }, { n: "Gray", h: "#8E9089" }, { n: "Blue Grey", h: "#5B6579" },
+{ n: "Dark Gray", h: "#545454" }, { n: "Black", h: "#000000" }, { n: "Magenta", h: "#EC008C" },
+{ n: "Pink", h: "#F55A74" }, { n: "Hot Pink", h: "#F5547C" }, { n: "Maroon Red", h: "#9D2235" },
+{ n: "Red", h: "#C12E1F" }, { n: "Orange", h: "#FF6A13" }, { n: "Pumpkin Orange", h: "#FF9016" },
+{ n: "Gold", h: "#E4BD68" }, { n: "Sunflower Yellow", h: "#FEC600" }, { n: "Yellow", h: "#F4EE2A" },
+{ n: "Bright Green", h: "#BECF00" }, { n: "Bambu Green", h: "#00AE42" }, { n: "Mistletoe Green", h: "#3F8E43" },
+{ n: "Turquoise", h: "#00B1B7" }, { n: "Cyan", h: "#0086D6" }, { n: "Blue", h: "#0A2989" },
+{ n: "Cobalt Blue", h: "#0056B8" }, { n: "Purple", h: "#5E43B7" }, { n: "Indigo Purple", h: "#482960" },
+{ n: "Bronze", h: "#847D48" }, { n: "Cocoa Brown", h: "#6F5034" }, { n: "Brown", h: "#9D432C" },
+],
+PETG: [
+{ n: "White", h: "#FFFFFF" }, { n: "Dark Beige", h: "#DBC8B6" }, { n: "Gray", h: "#7F7E83" },
+{ n: "Black", h: "#000000" }, { n: "Red", h: "#D6001C" }, { n: "Orange", h: "#FF671F" },
+{ n: "Yellow", h: "#FCE300" }, { n: "Green", h: "#009639" }, { n: "Pine Green", h: "#034638" },
+{ n: "Misty Blue", h: "#688197" }, { n: "Navy Blue", h: "#0086D6" }, { n: "Reflex Blue", h: "#001489" },
+{ n: "Dark Brown", h: "#4F2C1D" },
+],
+ABS: [
+{ n: "White", h: "#FFFFFF" }, { n: "Desert Tan", h: "#E8DBB7" }, { n: "Silver", h: "#87909A" },
+{ n: "Black", h: "#000000" }, { n: "Red", h: "#D32941" }, { n: "Orange", h: "#FF6A13" },
+{ n: "Tangerine Yellow", h: "#FFC72C" }, { n: "Olive", h: "#789D4A" }, { n: "Azure", h: "#489FDF" },
+{ n: "Blue", h: "#0A2CA5" }, { n: "Navy Blue", h: "#0C2340" }, { n: "Purple", h: "#AF1685" },
+],
+TPU: [
+{ n: "White", h: "#FFFFFF" }, { n: "Gray", h: "#898D8D" }, { n: "Black", h: "#101820" },
+{ n: "Red", h: "#C8102E" }, { n: "Yellow", h: "#F3E600" }, { n: "Blue", h: "#0072CE" },
+],
+};
 
 const initialState = {
 stepId: "project", orderType: "single", service: null, priceIdx: null,
 name: "", description: "", qty: "", material: "PLA", colors: [], customColor: "",
 firstName: "", lastName: "", email: "", phone: "", notes: "",
-payment: null, invoiceConfirmed: false,
+payment: "link", invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
 };
 let s = { ...initialState };
@@ -480,7 +514,7 @@ ${s.service && s.service !== "design" ? `<div class="side-row"><span class="k">M
 }
 
 // ===== SCHRITT 1: Projekt (Auftragstyp-Umschalter + Service) =====
-const TYPE_TOGGLE = [{ key: "single", label: "Einzelauftrag" }, { key: "series", label: "Kleinserie (ab 10)" }];
+const TYPE_TOGGLE = [{ key: "single", label: "Einzelauftrag" }, { key: "series", label: "Kleinserie (ab 7)" }];
 function stepProjectHtml() {
 return `<div>
 <div class="seg-toggle">
@@ -535,21 +569,24 @@ function stepMaterialHtml() {
 const mats = effectiveMaterials();
 const keys = materialList();
 if (!keys.includes(s.material)) { s.material = keys[0]; s.colors = []; } // gewähltes Material nicht (mehr) verfügbar
-const mat = mats[s.material];
-const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
 const series = s.orderType === "series";
+const desc = mats[s.material].desc;
+// Kleinserie: ganze Bambu-Lab-Palette (jede Farbe bestellbar);
+// Einzelauftrag: nur der Lagerbestand aus dem Dashboard.
+const colors = series ? BAMBU_COLORS[s.material] : mats[s.material].colors;
+const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
 const colorLabel = series
-? "Farbe (vorrätige anklickbar – oder Wunschfarbe unten)"
+? "Farbe – ganze Bambu Lab-Palette (Mehrfachauswahl möglich)"
 : "Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)";
 return `<div>
 <div class="rf-title">Material &amp; Farbe</div>
 <div class="rf-subtitle">Alle Materialien werden auf meinen Bambu Lab-Druckern verarbeitet.</div>
 <div class="rf-field">${label("Material", true)}
 <div class="chip-row">${keys.map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
-<div class="mat-desc">${esc(mat.desc)}</div>
+<div class="mat-desc">${esc(desc)}</div>
 </div>
 <div class="rf-field">${label(colorLabel, !series)}
-<div class="color-row">${mat.colors.length ? mat.colors.map(
+<div class="color-row">${colors.length ? colors.map(
 (c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
 <div class="color-swatch" style="background:${c.h}"></div>
 <span>${esc(c.n)}</span>
@@ -557,8 +594,8 @@ return `<div>
 ).join("") : `<div class="mat-desc">Aktuell keine ${esc(s.material)}-Farbe am Lager – gib unten deine Wunschfarbe an.</div>`}</div>
 ${surcharge > 0 ? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>` : ""}
 </div>
-${series ? `<div class="rf-field">${label("Wunschfarbe (optional – nicht am Lager)")}
-<input class="rf-input" id="f-customColor" value="${esc(s.customColor)}" placeholder="z. B. RAL 5010 Enzianblau, Pantone 2925 C …">
+${series ? `<div class="rf-field">${label("Andere / Spezialfarbe (optional)")}
+<input class="rf-input" id="f-customColor" value="${esc(s.customColor)}" placeholder="z. B. RAL 5010, Silk, Matte, Farbverlauf …">
 <div class="notice-box compact" style="margin-top:10px"><span class="n-ic">${svg("icon-info")}</span><p>${esc(CUSTOM_COLOR_NOTE)}</p></div>
 </div>` : ""}
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
@@ -685,7 +722,7 @@ mount.querySelectorAll("[data-ordertype]").forEach((el) => {
 el.addEventListener("click", () => {
 s.orderType = el.dataset.ordertype;
 // Wechsel auf Einzelauftrag: "Rechnung" ist dort nicht verfügbar -> zurücksetzen.
-if (s.orderType !== "series" && s.payment === "invoice") { s.payment = null; s.invoiceConfirmed = false; }
+if (s.orderType !== "series" && s.payment === "invoice") { s.payment = "link"; s.invoiceConfirmed = false; }
 render();
 });
 });
