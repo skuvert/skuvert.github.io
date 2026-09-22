@@ -310,6 +310,8 @@ background: var(--bg); border-radius: var(--radius); cursor: pointer; transition
 .mat-chip.selected { background: var(--ink); color: #fff; border-color: var(--ink); }
 .mat-desc { font-size: 12.5px; color: var(--muted); background: var(--surface-alt); border-radius: var(--radius-sm); padding: 10px 14px; line-height: 1.55; }
 
+.cg-label { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; color: var(--ink); margin-bottom: 10px; }
+.cg-label .cg-note { font-weight: 500; color: var(--muted); }
 .color-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .color-swatch-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; width: 52px; }
 .color-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); transition: transform 0.15s ease, border-color .15s ease; }

@@ -221,46 +221,52 @@ const mats = effectiveMaterials();
 const inStock = all.filter((m) => mats[m].colors.length > 0);
 return inStock.length ? inStock : all;
 }
-const CUSTOM_COLOR_NOTE = "Für Kleinserien bestelle ich die gewünschte Farbe frisch für dich – die Lieferung kann dadurch 3–7 Arbeitstage länger dauern.";
 
-// Vollständige Bambu-Lab-Farbpaletten (offizielle Namen + Hex, Stand 2026).
-// Wird NUR bei Kleinserie angezeigt (dort kann jede Farbe bestellt werden);
-// beim Einzelauftrag gilt weiter der Lagerbestand aus dem Dashboard.
-const BAMBU_COLORS = {
+// Bestellbare Farbpalette je Material (deutsche Namen, offizielle Hex-Werte).
+// Bei Kleinserie: alles hieraus, was NICHT am Lager ist, erscheint als
+// "auf Bestellung". Beim Einzelauftrag gilt nur der Lagerbestand.
+const PALETTE = {
 PLA: [
-{ n: "Jade White", h: "#FFFFFF" }, { n: "Beige", h: "#F7E6DE" }, { n: "Light Gray", h: "#D1D3D5" },
-{ n: "Silver", h: "#A6A9AA" }, { n: "Gray", h: "#8E9089" }, { n: "Blue Grey", h: "#5B6579" },
-{ n: "Dark Gray", h: "#545454" }, { n: "Black", h: "#000000" }, { n: "Magenta", h: "#EC008C" },
-{ n: "Pink", h: "#F55A74" }, { n: "Hot Pink", h: "#F5547C" }, { n: "Maroon Red", h: "#9D2235" },
-{ n: "Red", h: "#C12E1F" }, { n: "Orange", h: "#FF6A13" }, { n: "Pumpkin Orange", h: "#FF9016" },
-{ n: "Gold", h: "#E4BD68" }, { n: "Sunflower Yellow", h: "#FEC600" }, { n: "Yellow", h: "#F4EE2A" },
-{ n: "Bright Green", h: "#BECF00" }, { n: "Bambu Green", h: "#00AE42" }, { n: "Mistletoe Green", h: "#3F8E43" },
-{ n: "Turquoise", h: "#00B1B7" }, { n: "Cyan", h: "#0086D6" }, { n: "Blue", h: "#0A2989" },
-{ n: "Cobalt Blue", h: "#0056B8" }, { n: "Purple", h: "#5E43B7" }, { n: "Indigo Purple", h: "#482960" },
-{ n: "Bronze", h: "#847D48" }, { n: "Cocoa Brown", h: "#6F5034" }, { n: "Brown", h: "#9D432C" },
+{ n: "Weiss", h: "#FFFFFF" }, { n: "Beige", h: "#F7E6DE" }, { n: "Hellgrau", h: "#D1D3D5" },
+{ n: "Silber", h: "#A6A9AA" }, { n: "Grau", h: "#8E9089" }, { n: "Blaugrau", h: "#5B6579" },
+{ n: "Dunkelgrau", h: "#545454" }, { n: "Schwarz", h: "#000000" }, { n: "Magenta", h: "#EC008C" },
+{ n: "Pink", h: "#F55A74" }, { n: "Knallpink", h: "#F5547C" }, { n: "Weinrot", h: "#9D2235" },
+{ n: "Rot", h: "#C12E1F" }, { n: "Orange", h: "#FF6A13" }, { n: "Dunkelorange", h: "#FF9016" },
+{ n: "Gold", h: "#E4BD68" }, { n: "Sonnengelb", h: "#FEC600" }, { n: "Gelb", h: "#F4EE2A" },
+{ n: "Hellgrün", h: "#BECF00" }, { n: "Grün", h: "#00AE42" }, { n: "Tannengrün", h: "#3F8E43" },
+{ n: "Türkis", h: "#00B1B7" }, { n: "Cyan", h: "#0086D6" }, { n: "Blau", h: "#0A2989" },
+{ n: "Kobaltblau", h: "#0056B8" }, { n: "Violett", h: "#5E43B7" }, { n: "Indigo", h: "#482960" },
+{ n: "Bronze", h: "#847D48" }, { n: "Kakaobraun", h: "#6F5034" }, { n: "Braun", h: "#9D432C" },
 ],
 PETG: [
-{ n: "White", h: "#FFFFFF" }, { n: "Dark Beige", h: "#DBC8B6" }, { n: "Gray", h: "#7F7E83" },
-{ n: "Black", h: "#000000" }, { n: "Red", h: "#D6001C" }, { n: "Orange", h: "#FF671F" },
-{ n: "Yellow", h: "#FCE300" }, { n: "Green", h: "#009639" }, { n: "Pine Green", h: "#034638" },
-{ n: "Misty Blue", h: "#688197" }, { n: "Navy Blue", h: "#0086D6" }, { n: "Reflex Blue", h: "#001489" },
-{ n: "Dark Brown", h: "#4F2C1D" },
+{ n: "Weiss", h: "#FFFFFF" }, { n: "Dunkelbeige", h: "#DBC8B6" }, { n: "Grau", h: "#7F7E83" },
+{ n: "Schwarz", h: "#000000" }, { n: "Rot", h: "#D6001C" }, { n: "Orange", h: "#FF671F" },
+{ n: "Gelb", h: "#FCE300" }, { n: "Grün", h: "#009639" }, { n: "Tannengrün", h: "#034638" },
+{ n: "Nebelblau", h: "#688197" }, { n: "Blau", h: "#0086D6" }, { n: "Dunkelblau", h: "#001489" },
+{ n: "Dunkelbraun", h: "#4F2C1D" },
 ],
 ABS: [
-{ n: "White", h: "#FFFFFF" }, { n: "Desert Tan", h: "#E8DBB7" }, { n: "Silver", h: "#87909A" },
-{ n: "Black", h: "#000000" }, { n: "Red", h: "#D32941" }, { n: "Orange", h: "#FF6A13" },
-{ n: "Tangerine Yellow", h: "#FFC72C" }, { n: "Olive", h: "#789D4A" }, { n: "Azure", h: "#489FDF" },
-{ n: "Blue", h: "#0A2CA5" }, { n: "Navy Blue", h: "#0C2340" }, { n: "Purple", h: "#AF1685" },
+{ n: "Weiss", h: "#FFFFFF" }, { n: "Sandbeige", h: "#E8DBB7" }, { n: "Silber", h: "#87909A" },
+{ n: "Schwarz", h: "#000000" }, { n: "Rot", h: "#D32941" }, { n: "Orange", h: "#FF6A13" },
+{ n: "Gelb", h: "#FFC72C" }, { n: "Olivgrün", h: "#789D4A" }, { n: "Azurblau", h: "#489FDF" },
+{ n: "Blau", h: "#0A2CA5" }, { n: "Dunkelblau", h: "#0C2340" }, { n: "Violett", h: "#AF1685" },
 ],
 TPU: [
-{ n: "White", h: "#FFFFFF" }, { n: "Gray", h: "#898D8D" }, { n: "Black", h: "#101820" },
-{ n: "Red", h: "#C8102E" }, { n: "Yellow", h: "#F3E600" }, { n: "Blue", h: "#0072CE" },
+{ n: "Weiss", h: "#FFFFFF" }, { n: "Grau", h: "#898D8D" }, { n: "Schwarz", h: "#101820" },
+{ n: "Rot", h: "#C8102E" }, { n: "Gelb", h: "#F3E600" }, { n: "Blau", h: "#0072CE" },
 ],
 };
 
+// Bestellbare Farben eines Materials = Palette ohne die bereits vorrätigen
+// (Abgleich per Name, case-insensitive).
+function orderableColors(material, stockColors) {
+const inStock = new Set(stockColors.map((c) => c.n.trim().toLowerCase()));
+return PALETTE[material].filter((c) => !inStock.has(c.n.toLowerCase()));
+}
+
 const initialState = {
 stepId: "project", orderType: "single", service: null, priceIdx: null,
-name: "", description: "", qty: "", material: "PLA", colors: [], customColor: "",
+name: "", description: "", qty: "", material: "PLA", colors: [],
 firstName: "", lastName: "", email: "", phone: "", notes: "",
 payment: "link", invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
@@ -402,8 +408,18 @@ const data = PRICE_DATA[s.service];
 const opt = data.options[s.priceIdx];
 const surcharge = extraColorSurcharge(data);
 let min = opt.min + surcharge, max = opt.max + surcharge;
+const physical = s.service === "print" || s.service === "both";
+// Mengen-Aufschlag ab 2 Stück (nur physische Drucke): Stückpreis = Median
+// der Basisrange / 2, mal Stückzahl, mit ±20 % Spielraum. Auf 5.- gerundet.
+const qty = parseInt(s.qty, 10);
+if (physical && qty >= 2) {
+const perPiece = (min + max) / 4; // = (Median) / 2
+const add = perPiece * qty;
+min = Math.round((min + add * 0.8) / 5) * 5;
+max = Math.round((max + add * 1.2) / 5) * 5;
+}
 let text = `CHF ${min}–${max}`;
-if (s.service === "print" || s.service === "both") text += " (exkl. Versand)";
+if (physical) text += " (exkl. Versand)";
 return text;
 }
 
@@ -426,8 +442,10 @@ m += `\nMATERIAL & FARBE\n`;
 m += `Material : ${s.material}\n`;
 m += `Farbe(n) : ${s.colors.length ? s.colors.join(", ") : "-"}\n`;
 if (surcharge > 0) m += `Mehrfarbig : Ja (${s.colors.length} Farben, +${surcharge} CHF)\n`;
-if (s.orderType === "series" && s.customColor.trim()) {
-m += `Wunschfarbe : ${s.customColor.trim()} (nicht am Lager – wird bestellt, Lieferung +3–7 Arbeitstage)\n`;
+if (s.orderType === "series") {
+const stockNames = new Set((effectiveMaterials()[s.material].colors || []).map((c) => c.n.toLowerCase()));
+const toOrder = s.colors.filter((c) => !stockNames.has(c.toLowerCase()));
+if (toOrder.length) m += `Auf Bestellung: ${toOrder.join(", ")} (nicht am Lager, +3–7 Arbeitstage)\n`;
 }
 }
 m += `\nGESCHÄTZTE PREISRANGE: ${priceText}\n(Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.)\n`;
@@ -496,7 +514,7 @@ return `<div class="rf-progress">
 function sideSummaryHtml() {
 const priceKnown = s.service !== null && s.priceIdx !== null;
 const val = (v) => (v ? `<span class="v">${esc(v)}</span>` : `<span class="v dim">noch offen</span>`);
-const colorSummary = [s.colors.join(", "), s.orderType === "series" && s.customColor.trim() ? "Wunsch: " + s.customColor.trim() : ""].filter(Boolean).join(" · ");
+const colorSummary = s.colors.join(", ");
 const matValue = s.material + (colorSummary ? " · " + colorSummary : "");
 return `<div class="side-head">Deine Anfrage</div>
 <div class="side-body">
@@ -571,13 +589,22 @@ const keys = materialList();
 if (!keys.includes(s.material)) { s.material = keys[0]; s.colors = []; } // gewähltes Material nicht (mehr) verfügbar
 const series = s.orderType === "series";
 const desc = mats[s.material].desc;
-// Kleinserie: ganze Bambu-Lab-Palette (jede Farbe bestellbar);
-// Einzelauftrag: nur der Lagerbestand aus dem Dashboard.
-const colors = series ? BAMBU_COLORS[s.material] : mats[s.material].colors;
+const stock = mats[s.material].colors;                 // vorrätig (aus Dashboard-Bestand)
+const order = series ? orderableColors(s.material, stock) : []; // nur Kleinserie: Rest bestellbar
 const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
-const colorLabel = series
-? "Farbe – ganze Bambu Lab-Palette (Mehrfachauswahl möglich)"
-: "Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)";
+const swatch = (c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
+<div class="color-swatch" style="background:${c.h}"></div>
+<span>${esc(c.n)}</span>
+</div>`;
+const surchargeNote = surcharge > 0
+? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>`
+: "";
+const colorBlock = series
+? `<div class="cg-label">Ab Lager – sofort verfügbar</div>
+${stock.length ? `<div class="color-row">${stock.map(swatch).join("")}</div>` : `<div class="mat-desc">Aktuell nichts an ${esc(s.material)} am Lager.</div>`}
+<div class="cg-label" style="margin-top:16px">Weitere Farben – auf Bestellung <span class="cg-note">(+3–7 Arbeitstage)</span></div>
+<div class="color-row">${order.map(swatch).join("")}</div>`
+: `<div class="color-row">${stock.length ? stock.map(swatch).join("") : `<div class="mat-desc">Aktuell keine ${esc(s.material)}-Farbe am Lager.</div>`}</div>`;
 return `<div>
 <div class="rf-title">Material &amp; Farbe</div>
 <div class="rf-subtitle">Alle Materialien werden auf meinen Bambu Lab-Druckern verarbeitet.</div>
@@ -585,19 +612,10 @@ return `<div>
 <div class="chip-row">${keys.map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
 <div class="mat-desc">${esc(desc)}</div>
 </div>
-<div class="rf-field">${label(colorLabel, !series)}
-<div class="color-row">${colors.length ? colors.map(
-(c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
-<div class="color-swatch" style="background:${c.h}"></div>
-<span>${esc(c.n)}</span>
-</div>`
-).join("") : `<div class="mat-desc">Aktuell keine ${esc(s.material)}-Farbe am Lager – gib unten deine Wunschfarbe an.</div>`}</div>
-${surcharge > 0 ? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>` : ""}
+<div class="rf-field">${label(series ? "Farbe (Mehrfachauswahl möglich)" : "Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)", true)}
+${colorBlock}
+${surchargeNote}
 </div>
-${series ? `<div class="rf-field">${label("Andere / Spezialfarbe (optional)")}
-<input class="rf-input" id="f-customColor" value="${esc(s.customColor)}" placeholder="z. B. RAL 5010, Silk, Matte, Farbverlauf …">
-<div class="notice-box compact" style="margin-top:10px"><span class="n-ic">${svg("icon-info")}</span><p>${esc(CUSTOM_COLOR_NOTE)}</p></div>
-</div>` : ""}
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
 </div>`;
 }
@@ -701,8 +719,7 @@ function validateStep(id) {
 if (id === "project" && !s.service) { alert("Bitte wähle einen Service."); return false; }
 if (id === "model" && !(s.name.trim() && s.priceIdx !== null && s.description.trim())) { alert("Bitte Bezeichnung, Stufe und Beschreibung ausfüllen."); return false; }
 if (id === "material") {
-const hasColor = s.colors.length > 0 || (s.orderType === "series" && s.customColor.trim());
-if (!s.material || !hasColor) { alert("Bitte Material und mindestens eine Farbe (oder eine Wunschfarbe) wählen."); return false; }
+if (!s.material || s.colors.length === 0) { alert("Bitte Material und mindestens eine Farbe wählen."); return false; }
 }
 return true;
 }
@@ -771,7 +788,16 @@ act("restart", () => { s = { ...initialState }; render(); });
 bindText("f-name", "name");
 bindText("f-description", "description");
 bindText("f-qty", "qty");
-bindText("f-customColor", "customColor");
+// Menge wirkt auf den Richtpreis -> Sidebar-Preis live nachziehen (ohne
+// Re-Render, damit der Cursor im Feld bleibt).
+const qtyEl = mount.querySelector("#f-qty");
+if (qtyEl) qtyEl.addEventListener("input", () => {
+const pv = mount.querySelector(".side-price .pv");
+if (!pv) return;
+const known = s.service !== null && s.priceIdx !== null;
+pv.textContent = known ? priceRangeText() : "CHF –";
+pv.classList.toggle("dim", !known);
+});
 bindText("f-firstName", "firstName");
 bindText("f-lastName", "lastName");
 bindText("f-email", "email");
