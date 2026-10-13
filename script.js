@@ -114,13 +114,13 @@ if (s.stepId === "material") render(); // schon offen? aktualisieren
 // kleiner Helfer: Inline-SVG-Icon aus dem Sprite (kein Emoji mehr)
 function svg(id) { return `<svg class="icon"><use href="#${id}"/></svg>`; }
 
-// ===== Auftragstyp (Schritt 0 – NEU) =====
-// Steuert unten die verfügbaren Zahlungsmethoden.
-const ORDER_TYPES = [
-{ key: "single", icon: "icon-cube", title: "Einzelauftrag", desc: "Einzelnes Objekt oder kleine Stückzahl." },
-{ key: "series", icon: "icon-boxes", title: "Kleinserie (ab 7 Teilen)", desc: "Grössere Stückzahl – auf Wunsch mit Rechnung (Zahlung nach Erhalt)." },
-];
-const ORDER_TYPE_LABEL = { single: "Einzelauftrag", series: "Kleinserie (ab 7 Teilen)" };
+// ===== Auftragstyp =====
+// Kein eigener Schritt mehr – wird direkt aus der Menge abgeleitet
+// (ab SERIES_MIN Stück = Kleinserie: Rechnung möglich, alle Farben bestellbar).
+const SERIES_MIN = 7;
+function qtyNum() { const n = parseInt(s.qty, 10); return Number.isFinite(n) && n > 0 ? n : 1; }
+function isSeries() { return qtyNum() >= SERIES_MIN; }
+function orderTypeLabel() { return isSeries() ? `Kleinserie (${qtyNum()} Stück)` : "Einzelauftrag"; }
 
 // ===== Zahlungsmethoden =====
 // Basis gilt für Einzelaufträge; Kleinserien erhalten zusätzlich "Rechnung".
@@ -132,38 +132,52 @@ const PAY_BASE = [
 ];
 const PAY_INVOICE = { key: "invoice", label: "Rechnung (Zahlung nach Erhalt)" };
 const INVOICE_TEXT = "Ich bestätige verbindlich, dass ich mich mit Absenden dieser Anfrage zur Zahlung der Rechnung nach Erhalt der Ware verpflichte, sofern das Angebot von mir bestätigt wurde. Zahlungsziel: 14 Tage nach Rechnungsstellung.";
-function paymentOptions() { return s.orderType === "series" ? [...PAY_BASE, PAY_INVOICE] : PAY_BASE; }
+function paymentOptions() { return isSeries() ? [...PAY_BASE, PAY_INVOICE] : PAY_BASE; }
 function payLabel(key) { const f = [...PAY_BASE, PAY_INVOICE].find((p) => p.key === key); return f ? f.label : "-"; }
 
-const PRICE_DATA = {
-design: {
-label: "Komplexität", mc: false, note: "",
-options: [
-{ level: 1, label: "Einfach", sub: "Halter, flache Teile", min: 10, max: 20 },
-{ level: 2, label: "Mittel", sub: "Gewinde, Clips, mehrteilig", min: 20, max: 35 },
-{ level: 3, label: "Komplex", sub: "Mechanik, organische Formen", min: 35, max: 65 },
-{ level: 4, label: "Sehr Komplex", sub: "Baugruppen, Ingenieur", min: 65, max: 125 },
-],
-},
-print: {
-label: "Druckgrösse", mc: true, note: "Versandkosten werden separat kalkuliert.",
-options: [
-{ level: 1, label: "Klein", sub: "bis 5 × 5 × 5 cm", min: 5, max: 10 },
-{ level: 2, label: "Mittel", sub: "bis 10 × 10 × 10 cm", min: 10, max: 20 },
-{ level: 3, label: "Gross", sub: "bis 15 × 15 × 15 cm", min: 20, max: 45 },
-{ level: 4, label: "Riesig", sub: "bis 25 × 25 × 25 cm", min: 45, max: 70 },
-],
-},
-both: {
-label: "Komplexität", mc: true, note: "",
-options: [
-{ level: 1, label: "Einfach", sub: "Halter, flache Teile", min: 15, max: 30 },
-{ level: 2, label: "Mittel", sub: "Gewinde, Clips, mehrteilig", min: 30, max: 55 },
-{ level: 3, label: "Komplex", sub: "Mechanik, organische Formen", min: 55, max: 75 },
-{ level: 4, label: "Sehr Komplex", sub: "Baugruppen, Ingenieur", min: 75, max: 145 },
-],
-},
-};
+// Preisbausteine: Konstruktionsaufwand (einmalig) + Druckkosten (pro Stück).
+// "Komplett-Paket" = beides, deshalb werden dort beide Stufen abgefragt.
+const COMPLEXITY = [
+{ level: 1, label: "Einfach", sub: "Halter, flache Teile", price: 15 },
+{ level: 2, label: "Mittel", sub: "Gewinde, Clips, mehrteilig", price: 25 },
+{ level: 3, label: "Komplex", sub: "Mechanik, organische Formen", price: 45 },
+{ level: 4, label: "Sehr Komplex", sub: "Baugruppen, Ingenieur", price: 85 },
+];
+// Druckpreis pro Stück. Die Stufen folgen dem realen Materialverbrauch
+// (Kantenlänge verdoppelt -> rund vier- bis achtfaches Gewicht).
+const SIZES = [
+{ level: 1, label: "Mini", sub: "bis 3 cm – Anhänger, Clips", price: 0.5 },
+{ level: 2, label: "Klein", sub: "bis 6 × 6 × 6 cm", price: 3 },
+{ level: 3, label: "Mittel", sub: "bis 12 × 12 × 12 cm", price: 12 },
+{ level: 4, label: "Gross", sub: "bis 18 × 18 × 18 cm", price: 34 },
+{ level: 5, label: "Riesig", sub: "bis 25 × 25 × 25 cm", price: 85 },
+// Ein Teil, das grösser als das Druckbett ist -> wird geteilt gedruckt und
+// verklebt. Kein Richtpreis, sondern Einzelprüfung.
+{ level: 0, label: "Variabel / Übergrösse", sub: "ein Teil über 25 cm – auf Anfrage", custom: true },
+];
+
+// ===== Preisformel =====
+// Total = max(Mindestpreis, Konstruktion + Rüstpauschale + Druck × Menge − Mengenrabatt)
+const MIN_PRICE = 15;   // Mindestauftragswert, egal wie klein
+const SETUP_FEE = 12;   // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
+const MATERIAL_FACTOR = { PLA: 1, PETG: 1.15, ABS: 1.2, TPU: 1.35 };
+const COLOR_FACTOR = 0.15; // je zusätzliche Farbe (Filamentwechsel + Purge-Abfall)
+// Rabatt steigt mit der Stückzahl, gedeckelt bei 15 %. Gilt nur auf den Druckanteil.
+function qtyDiscount(q) { return q >= 11 ? 0.15 : q >= 6 ? 0.1 : q >= 3 ? 0.05 : 0; }
+
+function needsSize() { return s.service !== "design"; }
+function needsComplexity() { return s.service !== "print"; }
+function selSize() { return s.sizeIdx === null ? null : SIZES[s.sizeIdx]; }
+function selComplexity() { return s.complexIdx === null ? null : COMPLEXITY[s.complexIdx]; }
+// Übergrösse gewählt -> kein berechneter Preis, sondern "auf Anfrage".
+function isCustomSize() { const z = selSize(); return !!(needsSize() && z && z.custom); }
+// Alle preisrelevanten Stufen gewählt?
+function priceKnown() {
+if (!s.service) return false;
+if (needsSize() && s.sizeIdx === null) return false;
+if (needsComplexity() && s.complexIdx === null) return false;
+return true;
+}
 
 const SERVICES = [
 { key: "design", icon: "icon-pen", title: "Nur Design", desc: "Ich erstelle ein 3D-Modell nach deinen Vorgaben inklusive kommerzieller Lizenz. Du erhältst die fertigen Dateien zum selbst Drucken." },
@@ -216,7 +230,7 @@ return out;
 // (Wunschfarbe kann bestellt werden, auch wenn nichts am Lager ist).
 function materialList() {
 const all = Object.keys(MATERIALS);
-if (s.orderType === "series") return all;
+if (isSeries()) return all;
 const mats = effectiveMaterials();
 const inStock = all.filter((m) => mats[m].colors.length > 0);
 return inStock.length ? inStock : all;
@@ -265,8 +279,8 @@ return PALETTE[material].filter((c) => !inStock.has(c.n.toLowerCase()));
 }
 
 const initialState = {
-stepId: "project", orderType: "single", service: null, priceIdx: null,
-name: "", description: "", qty: "", material: "PLA", colors: [],
+stepId: "project", service: null, sizeIdx: null, complexIdx: null,
+name: "", description: "", qty: "1", material: "PLA", colors: [],
 firstName: "", lastName: "", email: "", phone: "", notes: "",
 payment: "link", invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
@@ -398,55 +412,85 @@ bodyEl.innerHTML = `<p>Der Inhalt konnte hier nicht geladen werden.</p>
 });
 }
 
-function extraColorSurcharge(data) {
-return data.mc ? Math.max(0, s.colors.length - 1) * 3 : 0;
+const ON_REQUEST = "Preis auf Anfrage";
+const extraColors = () => Math.max(0, s.colors.length - 1);
+// Beträge im Schweizer Stil: 12.– statt 12.00, 20.50 bleibt 20.50.
+function chf(v) { return v.toFixed(2).replace(/\.00$/, ".–"); }
+
+// Aufschlüsselung des Preises – dieselbe Liste, die in der Sidebar und in der
+// Anfrage-Mail steht. null, wenn (noch) nicht rechenbar.
+function priceBreakdown() {
+if (!priceKnown() || isCustomSize()) return null;
+const rows = [];
+let total = 0;
+if (needsComplexity()) {
+const c = selComplexity();
+rows.push({ k: `Konstruktion (${c.label})`, v: c.price });
+total += c.price;
+}
+if (needsSize()) {
+const z = selSize(), q = qtyNum();
+const base = z.price * q;
+rows.push({ k: `Druck ${q} × ${z.label}`, v: base });
+const mat = MATERIAL_FACTOR[s.material] || 1;
+const matAdd = base * (mat - 1);
+if (matAdd > 0) rows.push({ k: `Material ${s.material} (+${Math.round((mat - 1) * 100)} %)`, v: matAdd });
+const colAdd = (base + matAdd) * COLOR_FACTOR * extraColors();
+if (colAdd > 0) rows.push({ k: `${s.colors.length} Farben (+${COLOR_FACTOR * 100} % je Zusatzfarbe)`, v: colAdd });
+rows.push({ k: "Rüsten & Verpacken", v: SETUP_FEE });
+const print = base + matAdd + colAdd;
+const disc = qtyDiscount(q);
+total += print + SETUP_FEE;
+if (disc) {
+rows.push({ k: `Mengenrabatt (${disc * 100} %)`, v: -print * disc });
+total -= print * disc;
+}
+}
+// Mindestauftragswert: darunter wird nie kalkuliert.
+const raised = total < MIN_PRICE;
+if (raised) rows.push({ k: `Mindestauftragswert`, v: MIN_PRICE - total });
+return { rows, total: Math.max(MIN_PRICE, total), raised };
 }
 
+// Angezeigte Spanne: ±20 % um den berechneten Wert, auf 5.– gerundet.
 function priceRangeText() {
-if (!s.service || s.priceIdx === null) return "Wähle Service & Komplexität für eine erste Schätzung";
-const data = PRICE_DATA[s.service];
-const opt = data.options[s.priceIdx];
-const surcharge = extraColorSurcharge(data);
-let min = opt.min + surcharge, max = opt.max + surcharge;
-const physical = s.service === "print" || s.service === "both";
-// Mengen-Aufschlag ab 2 Stück (nur physische Drucke): Stückpreis = Median
-// der Basisrange / 2, mal Stückzahl, mit ±20 % Spielraum. Auf 5.- gerundet.
-const qty = parseInt(s.qty, 10);
-if (physical && qty >= 2) {
-const perPiece = (min + max) / 4; // = (Median) / 2
-const add = perPiece * qty;
-min = Math.round((min + add * 0.8) / 5) * 5;
-max = Math.round((max + add * 1.2) / 5) * 5;
-}
-let text = `CHF ${min}–${max}`;
-if (physical) text += " (exkl. Versand)";
-return text;
+if (!priceKnown()) return "Wähle Service & Stufe für eine erste Schätzung";
+if (isCustomSize()) return ON_REQUEST;
+const b = priceBreakdown();
+const r5 = (v) => Math.round(v / 5) * 5;
+const lo = Math.max(MIN_PRICE, r5(b.total * 0.8));
+const hi = Math.max(lo + 5, r5(b.total * 1.2));
+return `CHF ${lo}–${hi}` + (needsSize() ? " (exkl. Versand)" : "");
 }
 
 function buildMessage(priceText) {
-const data = s.service ? PRICE_DATA[s.service] : null;
-const opt = data && s.priceIdx !== null ? data.options[s.priceIdx] : null;
 let m = `Neue Bestellung – Skuvert Custom 3D Service\n`;
 m += `Auftragsnummer: ${s.orderNo || "-"}\n`;
 m += `==========================================\n\n`;
-m += `AUFTRAGSTYP: ${s.orderType ? ORDER_TYPE_LABEL[s.orderType] : "-"}\n`;
+m += `AUFTRAGSTYP: ${orderTypeLabel()}\n`;
 m += `SERVICE: ${s.service ? SVC_LABEL[s.service] : "-"}\n\n`;
 m += `MODELL\n`;
 m += `Bezeichnung : ${s.name}\n`;
-m += `${data ? data.label : "Komplexität"} : ${opt ? opt.label : "-"}\n`;
-m += `Menge : ${s.qty || "1 Stück"}\n`;
+if (needsSize()) m += `Druckgrösse : ${selSize() ? selSize().label : "-"}\n`;
+if (needsComplexity()) m += `Komplexität : ${selComplexity() ? selComplexity().label : "-"}\n`;
+m += `Menge : ${qtyNum()} Stück\n`;
 m += `Beschreibung:\n${s.description}\n`;
 if (s.service !== "design") {
-const surcharge = extraColorSurcharge(data);
 m += `\nMATERIAL & FARBE\n`;
 m += `Material : ${s.material}\n`;
 m += `Farbe(n) : ${s.colors.length ? s.colors.join(", ") : "-"}\n`;
-if (surcharge > 0) m += `Mehrfarbig : Ja (${s.colors.length} Farben, +${surcharge} CHF)\n`;
-if (s.orderType === "series") {
+if (extraColors() > 0) m += `Mehrfarbig : Ja (${s.colors.length} Farben)\n`;
+if (isSeries()) {
 const stockNames = new Set((effectiveMaterials()[s.material].colors || []).map((c) => c.n.toLowerCase()));
 const toOrder = s.colors.filter((c) => !stockNames.has(c.toLowerCase()));
 if (toOrder.length) m += `Auf Bestellung: ${toOrder.join(", ")} (nicht am Lager, +3–7 Arbeitstage)\n`;
 }
+}
+const bk = priceBreakdown();
+if (bk) {
+m += `\nPREIS – AUFSCHLÜSSELUNG\n`;
+bk.rows.forEach((r) => { m += `${r.k.padEnd(32)} ${r.v < 0 ? "−" : ""}${chf(Math.abs(r.v))}\n`; });
+m += `${"Berechnet".padEnd(32)} ${chf(bk.total)}\n`;
 }
 m += `\nGESCHÄTZTE PREISRANGE: ${priceText}\n(Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.)\n`;
 m += `\nZAHLUNG\n`;
@@ -510,34 +554,40 @@ return `<div class="rf-progress">
 </div>`;
 }
 
+// Aufschlüsselung, damit der Preis nachvollziehbar ist (kein Blackbox-Betrag).
+function breakdownHtml() {
+const b = priceBreakdown();
+if (!b) return "";
+return `<div class="side-break">
+${b.rows.map((r) => `<div class="bk-row${r.v < 0 ? " neg" : ""}"><span>${esc(r.k)}</span><span>${r.v < 0 ? "−" : ""}${chf(Math.abs(r.v))}</span></div>`).join("")}
+</div>`;
+}
+
 // Mitlaufende Zusammenfassung + Richtpreis (rechte Spalte, immer sichtbar).
 function sideSummaryHtml() {
-const priceKnown = s.service !== null && s.priceIdx !== null;
+const known = priceKnown();
 const val = (v) => (v ? `<span class="v">${esc(v)}</span>` : `<span class="v dim">noch offen</span>`);
 const colorSummary = s.colors.join(", ");
 const matValue = s.material + (colorSummary ? " · " + colorSummary : "");
 return `<div class="side-head">Deine Anfrage</div>
 <div class="side-body">
-<div class="side-row"><span class="k">Auftragstyp</span>${val(s.orderType ? ORDER_TYPE_LABEL[s.orderType] : "")}</div>
 <div class="side-row"><span class="k">Service</span>${val(s.service ? SVC_LABEL[s.service] : "")}</div>
 <div class="side-row"><span class="k">Objekt</span>${val(s.name)}</div>
+<div class="side-row"><span class="k">Menge</span>${val(qtyNum() + " Stück" + (isSeries() ? " · Kleinserie" : ""))}</div>
 ${s.service && s.service !== "design" ? `<div class="side-row"><span class="k">Material</span>${val(matValue)}</div>` : ""}
 </div>
 <div class="side-price">
+${breakdownHtml()}
 <div class="pl">Geschätzter Preis</div>
-<div class="pv${priceKnown ? "" : " dim"}">${priceKnown ? esc(priceRangeText()) : "CHF –"}</div>
-<div class="ph">Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot.</div>
+<div class="pv${known ? "" : " dim"}">${known ? esc(priceRangeText()) : "CHF –"}</div>
+<div class="ph">${isCustomSize() ? "Wir prüfen dein Objekt und melden uns mit einem Preis." : "Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot."}</div>
 </div>
 <div class="side-assure">${svg("icon-info")} Antwort meist innert 24 Stunden.</div>`;
 }
 
-// ===== SCHRITT 1: Projekt (Auftragstyp-Umschalter + Service) =====
-const TYPE_TOGGLE = [{ key: "single", label: "Einzelauftrag" }, { key: "series", label: "Kleinserie (ab 7)" }];
+// ===== SCHRITT 1: Projekt (Service) =====
 function stepProjectHtml() {
 return `<div>
-<div class="seg-toggle">
-${TYPE_TOGGLE.map((o) => `<button type="button" class="seg-opt${s.orderType === o.key ? " on" : ""}" data-ordertype="${o.key}">${esc(o.label)}</button>`).join("")}
-</div>
 <div class="rf-title">Was brauchst du?</div>
 <div class="rf-subtitle">Wähle den Service – den Rest klären wir Schritt für Schritt.</div>
 <div class="service-list">
@@ -553,30 +603,40 @@ ${SERVICES.map(
 </div>`;
 }
 
+// Stufen-Raster (Grösse oder Komplexität) – "attr" ist das data-Attribut für den Klick-Handler.
+function tierGrid(options, selected, attr) {
+const steps = Math.max(...options.map((o) => o.level)); // Grössen: 5 Balken, Komplexität: 4
+return `<div class="tier-grid">
+${options.map(
+(opt, i) => `<div class="tier-option${selected === i ? " selected" : ""}${opt.custom ? " tier-option--custom" : ""}" data-${attr}="${i}">
+<div class="tier-bars">${Array.from({ length: steps }, (_, n) => n + 1).map((b) => `<i class="${b <= opt.level ? "on" : ""}"></i>`).join("")}</div>
+<div class="t-label">${esc(opt.label)}</div>
+<div class="t-sub">${esc(opt.sub)}</div>
+</div>`
+).join("")}
+</div>`;
+}
+
 function stepModelHtml() {
-const data = PRICE_DATA[s.service];
 return `<div>
 <div class="rf-title">Modell-Details</div>
 <div class="rf-subtitle">Je mehr Details, desto präziser mein Angebot.</div>
 <div class="rf-field">${label("Bezeichnung / Name des Objekts", true)}
 <input class="rf-input" id="f-name" value="${esc(s.name)}" placeholder="z. B. Werkzeughalter, Schlüsselanhänger …">
 </div>
-<div class="rf-field">${label(data.label, true)}
-<div class="tier-grid">
-${data.options.map(
-(opt, i) => `<div class="tier-option${s.priceIdx === i ? " selected" : ""}" data-tier="${i}">
-<div class="tier-bars">${[1, 2, 3, 4].map((b) => `<i class="${b <= opt.level ? "on" : ""}"></i>`).join("")}</div>
-<div class="t-label">${esc(opt.label)}</div>
-<div class="t-sub">${esc(opt.sub)}</div>
-</div>`
-).join("")}
-</div>
+${needsSize() ? `<div class="rf-field">${label("Druckgrösse", true)}
+${tierGrid(SIZES, s.sizeIdx, "size")}
+${isCustomSize() ? `<div class="notice-box compact" style="margin-top:12px"><span class="n-ic">${svg("icon-info")}</span><p><strong>${ON_REQUEST}</strong> – wir melden uns nach Prüfung bei dir. Bitte die ungefähren Masse in der Beschreibung angeben.</p></div>` : ""}
+</div>` : ""}
+${needsComplexity() ? `<div class="rf-field">${label("Komplexität", true)}
+${tierGrid(COMPLEXITY, s.complexIdx, "complex")}
+</div>` : ""}
+<div class="rf-field">${label("Menge", true)}
+<input class="rf-input" id="f-qty" type="number" min="1" step="1" style="max-width:160px" value="${esc(s.qty)}">
+<div class="mat-desc" style="margin-top:8px">Ab ${SERIES_MIN} Stück gilt dein Auftrag als Kleinserie – dann ist auch Zahlung per Rechnung möglich.</div>
 </div>
 <div class="rf-field">${label("Beschreibung & Anforderungen", true)}
 <textarea class="rf-input" id="f-description" placeholder="Grösse, Funktion, Toleranzen, Masse, besondere Anforderungen …">${esc(s.description)}</textarea>
-</div>
-<div class="rf-field">${label("Menge")}
-<input class="rf-input" id="f-qty" style="max-width:240px" value="${esc(s.qty)}" placeholder="z. B. 1 Stück · 10 Stück">
 </div>
 <div class="notice-box"><span class="n-ic">${svg("icon-info")}</span><p>Bitte füge Skizzen, Referenzbilder oder 3D-Dateien <strong>direkt beim Senden</strong> als Anhang hinzu. Formate: Bilder · PDF · STL · OBJ · STEP · 3MF · DXF</p></div>
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
@@ -587,17 +647,16 @@ function stepMaterialHtml() {
 const mats = effectiveMaterials();
 const keys = materialList();
 if (!keys.includes(s.material)) { s.material = keys[0]; s.colors = []; } // gewähltes Material nicht (mehr) verfügbar
-const series = s.orderType === "series";
+const series = isSeries();
 const desc = mats[s.material].desc;
 const stock = mats[s.material].colors;                 // vorrätig (aus Dashboard-Bestand)
 const order = series ? orderableColors(s.material, stock) : []; // nur Kleinserie: Rest bestellbar
-const surcharge = extraColorSurcharge(PRICE_DATA[s.service]);
 const swatch = (c) => `<div class="color-swatch-wrap${s.colors.includes(c.n) ? " selected" : ""}" data-color="${esc(c.n)}">
 <div class="color-swatch" style="background:${c.h}"></div>
 <span>${esc(c.n)}</span>
 </div>`;
-const surchargeNote = surcharge > 0
-? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${surcharge} CHF): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>`
+const surchargeNote = extraColors() > 0
+? `<div class="mat-desc" style="margin-top:10px">Mehrfarbig gewählt (+${COLOR_FACTOR * 100} % auf den Druckanteil je Zusatzfarbe): Bitte in der Beschreibung genau angeben, welche Farbe wohin kommt, oder ein Referenzbild mitschicken.</div>`
 : "";
 const colorBlock = series
 ? `<div class="cg-label">Ab Lager – sofort verfügbar</div>
@@ -612,7 +671,7 @@ return `<div>
 <div class="chip-row">${keys.map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
 <div class="mat-desc">${esc(desc)}</div>
 </div>
-<div class="rf-field">${label(series ? "Farbe (Mehrfachauswahl möglich)" : "Farbe (Mehrfachauswahl möglich, jede weitere Farbe +3 CHF)", true)}
+<div class="rf-field">${label("Farbe (Mehrfachauswahl möglich, jede weitere Farbe +15 % auf den Druckanteil)", true)}
 ${colorBlock}
 ${surchargeNote}
 </div>
@@ -623,6 +682,8 @@ ${surchargeNote}
 // Zahlungsmethode – abhängig vom Auftragstyp (Kleinserie => zusätzlich "Rechnung").
 function paySelectHtml() {
 const opts = paymentOptions();
+// Menge nachträglich unter die Kleinserien-Grenze gesenkt -> "Rechnung" fällt weg.
+if (s.payment === "invoice" && !isSeries()) { s.payment = "link"; s.invoiceConfirmed = false; }
 return `<div class="rf-field">${label("Zahlungsmethode", true)}
 <div class="pay-select">
 ${opts.map(
@@ -717,7 +778,12 @@ if (el) el.addEventListener("input", (e) => { s[field] = e.target.value; });
 // Validierung des aktuellen Schritts vor "Weiter".
 function validateStep(id) {
 if (id === "project" && !s.service) { alert("Bitte wähle einen Service."); return false; }
-if (id === "model" && !(s.name.trim() && s.priceIdx !== null && s.description.trim())) { alert("Bitte Bezeichnung, Stufe und Beschreibung ausfüllen."); return false; }
+if (id === "model") {
+if (!s.name.trim() || !s.description.trim()) { alert("Bitte Bezeichnung und Beschreibung ausfüllen."); return false; }
+if (needsSize() && s.sizeIdx === null) { alert("Bitte eine Druckgrösse wählen."); return false; }
+if (needsComplexity() && s.complexIdx === null) { alert("Bitte eine Komplexitätsstufe wählen."); return false; }
+if (!(parseInt(s.qty, 10) >= 1)) { alert("Bitte eine Menge ab 1 Stück angeben."); return false; }
+}
 if (id === "material") {
 if (!s.material || s.colors.length === 0) { alert("Bitte Material und mindestens eine Farbe wählen."); return false; }
 }
@@ -735,19 +801,14 @@ render();
 }
 
 function attachListeners() {
-mount.querySelectorAll("[data-ordertype]").forEach((el) => {
-el.addEventListener("click", () => {
-s.orderType = el.dataset.ordertype;
-// Wechsel auf Einzelauftrag: "Rechnung" ist dort nicht verfügbar -> zurücksetzen.
-if (s.orderType !== "series" && s.payment === "invoice") { s.payment = "link"; s.invoiceConfirmed = false; }
-render();
-});
-});
 mount.querySelectorAll("[data-service]").forEach((el) => {
-el.addEventListener("click", () => { s.service = el.dataset.service; s.priceIdx = null; s.colors = []; render(); });
+el.addEventListener("click", () => { s.service = el.dataset.service; s.sizeIdx = null; s.complexIdx = null; s.colors = []; render(); });
 });
-mount.querySelectorAll("[data-tier]").forEach((el) => {
-el.addEventListener("click", () => { s.priceIdx = Number(el.dataset.tier); render(); });
+mount.querySelectorAll("[data-size]").forEach((el) => {
+el.addEventListener("click", () => { s.sizeIdx = Number(el.dataset.size); render(); });
+});
+mount.querySelectorAll("[data-complex]").forEach((el) => {
+el.addEventListener("click", () => { s.complexIdx = Number(el.dataset.complex); render(); });
 });
 mount.querySelectorAll("[data-material]").forEach((el) => {
 el.addEventListener("click", () => { s.material = el.dataset.material; s.colors = []; render(); });
@@ -792,11 +853,8 @@ bindText("f-qty", "qty");
 // Re-Render, damit der Cursor im Feld bleibt).
 const qtyEl = mount.querySelector("#f-qty");
 if (qtyEl) qtyEl.addEventListener("input", () => {
-const pv = mount.querySelector(".side-price .pv");
-if (!pv) return;
-const known = s.service !== null && s.priceIdx !== null;
-pv.textContent = known ? priceRangeText() : "CHF –";
-pv.classList.toggle("dim", !known);
+const side = mount.querySelector(".rf-side");
+if (side) side.innerHTML = sideSummaryHtml(); // nur die Sidebar, Cursor bleibt im Feld
 });
 bindText("f-firstName", "firstName");
 bindText("f-lastName", "lastName");
