@@ -157,7 +157,36 @@ border-radius: var(--radius); border: 1px solid var(--border); background: var(-
 box-shadow: var(--shadow-md);
 }
 .photo img, .photo video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.photo--hero { aspect-ratio: 4 / 3; }
+
+/* ---------- Hero-Buehne: zwei Timelapses, weich auslaufend ---------- */
+.hero-media {
+position: relative; aspect-ratio: 16 / 10; width: 100%;
+border-radius: 14px; overflow: hidden; isolation: isolate;
+/* die Kanten laufen in den Seitenhintergrund aus, statt hart abzuschneiden */
+-webkit-mask-image: radial-gradient(128% 124% at 50% 45%, #000 44%, rgba(0,0,0,.72) 68%, rgba(0,0,0,.26) 87%, transparent 100%);
+mask-image: radial-gradient(128% 124% at 50% 45%, #000 44%, rgba(0,0,0,.72) 68%, rgba(0,0,0,.26) 87%, transparent 100%);
+}
+.hero-media::after {
+content: ""; position: absolute; inset: 0; pointer-events: none;
+background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 34%, rgba(26,34,51,.10));
+}
+.hero-clip {
+position: absolute; inset: 0; width: 100%; height: 100%;
+object-fit: cover; display: block;
+opacity: 0; transition: opacity 1.1s ease-in-out;
+}
+.hero-clip.is-current { opacity: 1; }
+
+.hero-media-cap {
+display: flex; align-items: center; justify-content: center; gap: 8px;
+margin-top: 14px; font-size: 12.5px; font-weight: 500; color: var(--muted);
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #E4572E; flex: none; animation: making-pulse 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+.hero-clip { transition: none; }
+.live-dot { animation: none; }
+}
 .photo figcaption, .photo-cap {
 position: absolute; left: 0; right: 0; bottom: 0;
 padding: 22px 16px 12px; font-size: 12.5px; font-weight: 500; color: #fff;

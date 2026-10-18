@@ -75,6 +75,37 @@ observer.unobserve(entry.target);
 targets.forEach((el) => observer.observe(el));
 })();
 
+// ---------- hero: zwei Timelapses abwechselnd, mit Crossfade ----------
+(function initHeroClips() {
+const clips = document.querySelectorAll("#hero-media .hero-clip");
+if (clips.length < 2) return;
+
+let current = 0;
+const next = () => (current + 1) % clips.length;
+
+// den naechsten Clip laden, sobald der laufende zur Haelfte durch ist
+clips.forEach((clip) => {
+clip.addEventListener("timeupdate", () => {
+if (!clip.duration || clip.currentTime < clip.duration / 2) return;
+const upcoming = clips[next()];
+if (upcoming.preload === "none") {
+upcoming.preload = "auto";
+upcoming.load();
+}
+});
+
+clip.addEventListener("ended", () => {
+const upcoming = clips[next()];
+upcoming.currentTime = 0;
+const play = upcoming.play();
+if (play) play.catch(() => {});
+upcoming.classList.add("is-current");
+clip.classList.remove("is-current");
+current = next();
+});
+});
+})();
+
 // ---------- request form ----------
 (function initRequestForm() {
 const mount = document.getElementById("request-form");

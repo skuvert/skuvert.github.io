@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 <style>
 .pay-methods{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 6px}
 .pay-badge{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 9px;min-width:46px;background:#fff;border:1px solid var(--border);border-radius:6px}
@@ -64,11 +64,11 @@
 </div>
 </div>
 <figure class="hero-figure reveal">
-<div class="photo photo--hero">
-<video src="img/hero-druck.mp4" poster="img/hero-druck.webp" autoplay muted loop playsinline preload="metadata" width="1000" height="750" aria-label="Eine massgefertigte Werkzeug-Einlage entsteht Schicht für Schicht auf dem Drucker"></video>
-<span class="making-live">Im Druck</span>
-<figcaption>Live aus meiner Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
+<div class="hero-media" id="hero-media">
+<video class="hero-clip is-current" src="img/hero-timelapse-1.mp4" poster="img/hero-timelapse.webp" autoplay muted playsinline preload="auto" width="1024" height="640" aria-label="Zeitraffer: ein Druckteil entsteht Schicht für Schicht"></video>
+<video class="hero-clip" src="img/hero-timelapse-2.mp4" muted playsinline preload="none" width="960" height="600" aria-label="Zeitraffer: mehrere Teile wachsen gleichzeitig auf dem Druckbett"></video>
 </div>
+<figcaption class="hero-media-cap"><span class="live-dot"></span>Live aus meiner Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
 </figure>
 </div>
 </section>
@@ -256,7 +256,7 @@
 <p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
 </footer>
 
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 
 </body>
 </html>
