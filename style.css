@@ -17,6 +17,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 --accent-strong: #254E78;
 --accent-tint: #EAF0F6;       /* pale blue surface */
 --border: #E3E7ED;
+--maxw: 1120px;               /* Inhaltsbreite, waechst auf grossen Screens */
 --radius: 8px;                /* cards / buttons */
 --radius-sm: 4px;             /* inputs */
 --shadow-sm: 0 1px 2px rgba(26,34,51,.05);
@@ -32,12 +33,23 @@ font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 overflow-x: hidden;
 }
 
+/* 16:9-Monitore: Inhalt darf breiter werden, sonst stehen die Raender leer */
+@media (min-width: 1360px) { :root { --maxw: 1260px; } }
+@media (min-width: 1660px) { :root { --maxw: 1400px; } }
+
 .icon { width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
 /* ---------- layout ---------- */
 .section { position: relative; padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 40px); }
-.section-inner { max-width: 1120px; margin: 0 auto; position: relative; z-index: 1; }
-.section--alt { background: var(--surface-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.section-inner { max-width: var(--maxw); margin: 0 auto; position: relative; z-index: 1; }
+.section--alt {
+background-color: var(--surface-alt);
+/* feines Konstruktionsraster – gibt den breiten Raendern Textur, statt leer zu bleiben */
+background-image: linear-gradient(rgba(46,94,143,.05) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(46,94,143,.05) 1px, transparent 1px);
+background-size: 46px 46px;
+border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
 .header-block { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; max-width: 620px; width: 100%; min-width: 0; margin: 0 auto clamp(36px, 5vw, 56px); box-sizing: border-box; }
 
 .eyebrow { width: 100%; font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin: 0; }
@@ -95,8 +107,9 @@ box-shadow: var(--shadow-sm);
 .hero-marquee {
 position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
 display: flex; flex-direction: column; justify-content: space-around;
--webkit-mask-image: linear-gradient(180deg, #000, transparent 92%);
-mask-image: linear-gradient(180deg, #000, transparent 92%);
+/* vorher lief die Maske nach unten auf null -> nur die oberste Zeile war lesbar */
+-webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.5), #000 14%, #000 78%, rgba(0,0,0,.2));
+mask-image: linear-gradient(180deg, rgba(0,0,0,.5), #000 14%, #000 78%, rgba(0,0,0,.2));
 }
 .marquee-row { overflow: hidden; }
 .marquee-track { display: flex; width: max-content; will-change: transform; animation: marquee-left var(--dur, 60s) linear infinite; }
@@ -104,15 +117,54 @@ mask-image: linear-gradient(180deg, #000, transparent 92%);
 .mq-item {
 display: inline-flex; align-items: center; white-space: nowrap;
 font-size: clamp(1.1rem, 3.2vw, 2rem); font-weight: 600; letter-spacing: -0.01em;
-color: rgba(46, 94, 143, 0.07);
+color: rgba(46, 94, 143, 0.15);
+pointer-events: auto; cursor: pointer; transition: color .18s ease;
+}
+/* zweite Tonlage im Wechsel, damit das Raster nicht eintoenig wirkt */
+.marquee-row:nth-child(even) .mq-item { color: rgba(26, 34, 51, 0.095); }
+.mq-item:hover { color: var(--accent); }
+/* zum Anklicken anhalten */
+.marquee-row:hover .marquee-track { animation-play-state: paused; }
+
+/* haelt den Hero-Text lesbar, laesst das Raster an den Raendern stehen */
+.hero-scrim {
+position: absolute; inset: 0; z-index: 1; pointer-events: none;
+background: radial-gradient(46% 78% at 24% 50%, rgba(255,255,255,.97) 0%, rgba(255,255,255,.88) 46%, rgba(255,255,255,0) 100%);
+}
+
+.hero-hint { display: inline-flex; align-items: center; gap: 7px; margin: -6px 0 0; font-size: 12.5px; color: var(--faint); }
+.hero-hint .icon { width: 14px; height: 14px; color: var(--accent); flex: none; }
+@media (hover: none) { .hero-hint { display: none; } }
+
+/* Lesefortschritt – rein CSS, faellt ohne scroll-timeline einfach weg */
+.scroll-progress {
+position: fixed; top: 0; left: 0; z-index: 60; height: 2px; width: 100%;
+transform: scaleX(0); transform-origin: 0 50%; pointer-events: none;
+background: linear-gradient(90deg, var(--accent), #5E93C4);
+}
+@supports (animation-timeline: scroll()) {
+.scroll-progress { animation: scroll-progress linear both; animation-timeline: scroll(root block); }
+}
+@keyframes scroll-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* auf dem Handy ueberlagern sich Text und Raster zu stark -> ruhiger */
+@media (max-width: 860px) {
+.mq-item { color: rgba(46, 94, 143, 0.1); }
+.marquee-row:nth-child(even) .mq-item { color: rgba(26, 34, 51, 0.07); }
+.hero-scrim { background: radial-gradient(92% 58% at 50% 46%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.8) 58%, rgba(255,255,255,0) 100%); }
 }
 .mq-item::after { content: "·"; margin: 0 clamp(1rem, 3vw, 2.2rem); }
 @keyframes marquee-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes marquee-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
-@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+.marquee-track { animation: none; }
+.scroll-progress { animation: none; }
+.side-price .pv { animation: none; }
+.process-card:hover { transform: none; }
+}
 
 .hero-inner {
-position: relative; z-index: 2; max-width: 1120px; margin: 0 auto;
+position: relative; z-index: 2; max-width: var(--maxw); margin: 0 auto;
 display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(32px, 5vw, 64px); align-items: center;
 }
 .hero-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
@@ -228,8 +280,10 @@ will-change: opacity, transform;
 
 /* ---------- process (Ablauf) ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-.process-card { padding: 26px 24px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; transition: border-color .2s ease, box-shadow .2s ease; }
-.process-card:hover { border-color: var(--faint); box-shadow: var(--shadow-md); }
+.process-card { padding: 26px 24px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.process-card:hover { border-color: var(--faint); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.process-card:hover .glass-chip { background: var(--accent); border-color: var(--accent); color: #fff; }
+.glass-chip { transition: background .2s ease, color .2s ease, border-color .2s ease; }
 .process-card .step-no { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
 .process-card h3 { width: 100%; font-size: 16px; font-weight: 600; margin: 0; color: var(--ink); }
 .process-card p { width: 100%; font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--muted); margin: 0; }
@@ -292,7 +346,7 @@ color: #fff;
 .photo-band .band-cap .v { font-family: var(--serif); font-size: clamp(18px, 2.4vw, 26px); font-weight: 500; }
 
 /* ---------- request form ---------- */
-.request-wrap { max-width: 1040px; margin: 0 auto; font-family: inherit; }
+.request-wrap { max-width: min(1120px, var(--maxw)); margin: 0 auto; font-family: inherit; }
 .rf-shell { position: relative; }
 
 /* dünne Fortschrittsleiste (statt dicker Step-Chips) */
@@ -324,7 +378,9 @@ box-shadow: var(--shadow-md); padding: clamp(22px, 4vw, 34px);
 .side-row .v.dim { color: var(--faint); font-weight: 500; }
 .side-price { padding: 14px 18px; background: var(--accent-tint); border-top: 1px solid var(--border); }
 .side-price .pl { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
-.side-price .pv { font-family: var(--serif); font-size: 23px; font-weight: 600; color: var(--accent); margin-top: 2px; line-height: 1.2; }
+/* der Betrag wird bei jeder Aenderung neu gerendert -> kurzer Einblend-Impuls */
+.side-price .pv { font-family: var(--serif); font-size: 23px; font-weight: 600; color: var(--accent); margin-top: 2px; line-height: 1.2; animation: price-pop .4s cubic-bezier(.2,.8,.3,1); }
+@keyframes price-pop { from { opacity: .3; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .side-price .pv.dim { color: var(--faint); font-size: 18px; }
 .side-price .ph { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
 /* nachvollziehbare Aufschlüsselung über dem Preis */
@@ -335,6 +391,9 @@ box-shadow: var(--shadow-md); padding: clamp(22px, 4vw, 34px);
 .side-assure { display: flex; gap: 8px; align-items: center; padding: 12px 18px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
 .side-assure .icon { width: 15px; height: 15px; color: var(--accent); flex: none; }
 
+@media (min-width: 1360px) {
+.rf-layout { grid-template-columns: 1fr 360px; gap: 26px; }
+}
 @media (max-width: 860px) {
 .rf-layout { grid-template-columns: 1fr; }
 .rf-side { position: static; }
@@ -389,6 +448,7 @@ background: var(--bg); border-radius: var(--radius); cursor: pointer; transition
 .tier-bars i { width: 5px; height: 16px; border-radius: 1px; background: var(--border); display: block; }
 .tier-option.selected .tier-bars i.on { background: var(--accent); }
 .tier-bars i.on { background: var(--faint); }
+.tier-option:hover .tier-bars i.on { background: var(--accent); }
 .tier-option .t-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--ink); letter-spacing: .02em; }
 .tier-option .t-sub { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
 /* Übergrösse: eigene Zeile unter den vier Standardgrössen, Preis auf Anfrage */
@@ -475,7 +535,8 @@ background: var(--bg); border-radius: var(--radius); cursor: pointer; transition
 
 /* quiet stat band (was colourful cards) */
 .stat-band { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: clamp(36px, 5vw, 56px); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
-.stat { padding: 26px 18px; text-align: center; border-right: 1px solid var(--border); }
+.stat { padding: 26px 18px; text-align: center; border-right: 1px solid var(--border); transition: background .25s ease; }
+.stat:hover { background: var(--accent-tint); }
 .stat:last-child { border-right: none; }
 .stat .stat-num { display: block; font-family: var(--serif); font-size: clamp(26px, 3.4vw, 34px); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .stat .stat-label { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); margin-top: 6px; line-height: 1.4; }
@@ -500,7 +561,7 @@ background: var(--bg); border-radius: var(--radius); cursor: pointer; transition
 .faq-answer p { font-size: 14.5px; line-height: 1.65; color: var(--muted); margin: 14px 0 0; }
 
 /* ---------- footer ---------- */
-.footer { border-top: 1px solid var(--border); padding: 52px 40px 44px; display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: 1120px; margin: 0 auto; text-align: center; min-width: 0; }
+.footer { border-top: 1px solid var(--border); padding: 52px 40px 44px; display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: var(--maxw); margin: 0 auto; text-align: center; min-width: 0; }
 .footer > * { max-width: 100%; }
 .footer-logo-row { display: flex; align-items: center; gap: 10px; }
 .footer-logo-row .wordmark { font-weight: 700; font-size: 14px; letter-spacing: 0.1em; color: var(--ink); }

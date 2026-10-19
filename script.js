@@ -38,6 +38,40 @@ track.innerHTML = group + group; // verdoppeln für nahtlose Schleife
 row.appendChild(track);
 wrap.appendChild(row);
 });
+
+// Klick auf einen Begriff im Hintergrund: übernimmt ihn als Bezeichnung und
+// springt ins Formular. Das Formular hört auf das Event (siehe unten).
+wrap.addEventListener("click", (e) => {
+const item = e.target.closest(".mq-item");
+if (!item) return;
+document.dispatchEvent(new CustomEvent("skv:idea", { detail: item.textContent.trim() }));
+});
+})();
+
+// ---------- Zahlen im Stat-Band hochzählen ----------
+(function initCounters() {
+const nums = document.querySelectorAll(".stat-num");
+if (!nums.length || !("IntersectionObserver" in window)) return;
+if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+const fmt = (n) => n.toLocaleString("de-CH").replace(/[\u2019,]/g, "'");
+const run = (el) => {
+const raw = el.textContent.trim();
+const target = parseInt(raw.replace(/[^\d]/g, ""), 10);
+if (!Number.isFinite(target)) return;
+const suffix = raw.replace(/[\d'\u2019.,\s]/g, "");
+const t0 = performance.now(), dur = 1100;
+const tick = (now) => {
+const p = Math.min(1, (now - t0) / dur);
+el.textContent = fmt(Math.round(target * (1 - Math.pow(1 - p, 3)))) + suffix;
+if (p < 1) requestAnimationFrame(tick);
+};
+requestAnimationFrame(tick);
+};
+const io = new IntersectionObserver(
+(entries) => entries.forEach((en) => { if (en.isIntersecting) { run(en.target); io.unobserve(en.target); } }),
+{ threshold: 0.6 }
+);
+nums.forEach((n) => io.observe(n));
 })();
 
 // ---------- FAQ accordion ----------
@@ -168,52 +202,65 @@ function payLabel(key) { const f = [...PAY_BASE, PAY_INVOICE].find((p) => p.key 
 
 // Preisbausteine: Konstruktionsaufwand (einmalig) + Druckkosten (pro Stück).
 // "Komplett-Paket" = beides, deshalb werden dort beide Stufen abgefragt.
+// price = Basispreis der Konstruktion für ein mittelgrosses Objekt. Die Grösse
+// skaliert ihn über SIZES[].dsf: gleicher Aufwand, grösseres Teil = mehr Arbeit
+// (Wandstärken, Passungen, Druckbett-Aufteilung) und damit teurer.
 const COMPLEXITY = [
-{ level: 1, label: "Einfach", sub: "Halter, flache Teile", price: 15 },
-{ level: 2, label: "Mittel", sub: "Gewinde, Clips, mehrteilig", price: 25 },
-{ level: 3, label: "Komplex", sub: "Mechanik, organische Formen", price: 45 },
-{ level: 4, label: "Sehr Komplex", sub: "Baugruppen, Ingenieur", price: 85 },
+{ level: 1, label: "Einfach", sub: "Halter, flache Teile", price: 8 },
+{ level: 2, label: "Mittel", sub: "Gewinde, Clips, mehrteilig", price: 30 },
+{ level: 3, label: "Komplex", sub: "Mechanik, organische Formen", price: 58 },
+{ level: 4, label: "Sehr Komplex", sub: "Baugruppen, Ingenieur", price: 110 },
 ];
-// Druckpreis pro Stück. Die Stufen folgen dem realen Materialverbrauch
+// price = Druckpreis pro Stück, folgt dem realen Materialverbrauch
 // (Kantenlänge verdoppelt -> rund vier- bis achtfaches Gewicht).
+// dsf = Grössenfaktor auf den Konstruktionspreis.
 const SIZES = [
-{ level: 1, label: "Mini", sub: "bis 3 cm – Anhänger, Clips", price: 0.5 },
-{ level: 2, label: "Klein", sub: "bis 6 × 6 × 6 cm", price: 3 },
-{ level: 3, label: "Mittel", sub: "bis 12 × 12 × 12 cm", price: 12 },
-{ level: 4, label: "Gross", sub: "bis 18 × 18 × 18 cm", price: 34 },
-{ level: 5, label: "Riesig", sub: "bis 25 × 25 × 25 cm", price: 85 },
+{ level: 1, label: "Mini", sub: "bis 3 cm – Anhänger, Clips", price: 2, dsf: 0.75 },
+{ level: 2, label: "Klein", sub: "bis 6 × 6 × 6 cm", price: 5, dsf: 0.85 },
+{ level: 3, label: "Mittel", sub: "bis 12 × 12 × 12 cm", price: 14, dsf: 1 },
+{ level: 4, label: "Gross", sub: "bis 18 × 18 × 18 cm", price: 38, dsf: 1.25 },
+{ level: 5, label: "Riesig", sub: "bis 25 × 25 × 25 cm", price: 90, dsf: 1.5 },
 // Ein Teil, das grösser als das Druckbett ist -> wird geteilt gedruckt und
 // verklebt. Kein Richtpreis, sondern Einzelprüfung.
 { level: 0, label: "Variabel / Übergrösse", sub: "ein Teil über 25 cm – auf Anfrage", custom: true },
 ];
 
 // ===== Preisformel =====
-// Total = max(Mindestpreis, Konstruktion + Rüstpauschale + Druck × Menge − Mengenrabatt)
+// Total = max(Mindestpreis, Konstruktion × Grössenfaktor + Rüstpauschale + Druck × Menge − Mengenrabatt)
+// Einstieg: Komplett-Paket, Einfach + Mini, 1 Stück, 1 Farbe = 6 + 7 + 2 = genau 15.–
 const MIN_PRICE = 15;   // Mindestauftragswert, egal wie klein
-const SETUP_FEE = 12;   // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
+const SETUP_FEE = 7;    // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
 const MATERIAL_FACTOR = { PLA: 1, PETG: 1.15, ABS: 1.2, TPU: 1.35 };
 const COLOR_FACTOR = 0.15; // je zusätzliche Farbe (Filamentwechsel + Purge-Abfall)
 // Rabatt steigt mit der Stückzahl, gedeckelt bei 15 %. Gilt nur auf den Druckanteil.
 function qtyDiscount(q) { return q >= 11 ? 0.15 : q >= 6 ? 0.1 : q >= 3 ? 0.05 : 0; }
 
-function needsSize() { return s.service !== "design"; }
+// Die Grösse wird immer abgefragt: sie bestimmt den Druckpreis UND über dsf den
+// Konstruktionsaufwand. needsPrint() steuert nur noch die Druck-/Materialkosten.
+function needsPrint() { return s.service !== "design"; }
 function needsComplexity() { return s.service !== "print"; }
+// Konstruktionspreis = Basispreis × Grössenfaktor, auf 50 Rappen gerundet.
+function designPrice() {
+const c = selComplexity(), z = selSize();
+if (!c) return 0;
+return Math.round(c.price * (z && z.dsf ? z.dsf : 1) * 2) / 2;
+}
 function selSize() { return s.sizeIdx === null ? null : SIZES[s.sizeIdx]; }
 function selComplexity() { return s.complexIdx === null ? null : COMPLEXITY[s.complexIdx]; }
 // Übergrösse gewählt -> kein berechneter Preis, sondern "auf Anfrage".
-function isCustomSize() { const z = selSize(); return !!(needsSize() && z && z.custom); }
+function isCustomSize() { const z = selSize(); return !!(z && z.custom); }
 // Alle preisrelevanten Stufen gewählt?
 function priceKnown() {
 if (!s.service) return false;
-if (needsSize() && s.sizeIdx === null) return false;
+if (s.sizeIdx === null) return false;
 if (needsComplexity() && s.complexIdx === null) return false;
 return true;
 }
 
 const SERVICES = [
-{ key: "design", icon: "icon-pen", title: "Nur Design", desc: "Ich erstelle ein 3D-Modell nach deinen Vorgaben inklusive kommerzieller Lizenz. Du erhältst die fertigen Dateien zum selbst Drucken." },
-{ key: "print", icon: "icon-printer", title: "Nur 3D-Druck", desc: "Du lieferst das 3D-Modell, ich drucke es auf meinem Bambu Lab-System in Topqualität und schicke es dir zu." },
-{ key: "both", icon: "icon-layers", title: "Komplett-Paket", desc: "Von der Skizze zum fertigen Druck, ich übernehme Design und Produktion. Du erhältst das fertige Objekt direkt zu dir nach Hause." },
+{ key: "design", icon: "icon-pen", title: "Nur Design", desc: "Wir erstellen ein 3D-Modell nach deinen Vorgaben inklusive kommerzieller Lizenz. Du erhältst die fertigen Dateien zum selbst Drucken." },
+{ key: "print", icon: "icon-printer", title: "Nur 3D-Druck", desc: "Du lieferst das 3D-Modell, wir drucken es auf unserem Bambu Lab-System in Topqualität und schicken es dir zu." },
+{ key: "both", icon: "icon-layers", title: "Komplett-Paket", desc: "Von der Skizze zum fertigen Druck, wir übernehmen Design und Produktion. Du erhältst das fertige Objekt direkt zu dir nach Hause." },
 ];
 
 const SVC_LABEL = {
@@ -455,11 +502,12 @@ if (!priceKnown() || isCustomSize()) return null;
 const rows = [];
 let total = 0;
 if (needsComplexity()) {
-const c = selComplexity();
-rows.push({ k: `Konstruktion (${c.label})`, v: c.price });
-total += c.price;
+const c = selComplexity(), z = selSize();
+const v = designPrice();
+rows.push({ k: `Konstruktion (${c.label} · ${z.label})`, v });
+total += v;
 }
-if (needsSize()) {
+if (needsPrint()) {
 const z = selSize(), q = qtyNum();
 const base = z.price * q;
 rows.push({ k: `Druck ${q} × ${z.label}`, v: base });
@@ -491,7 +539,7 @@ const b = priceBreakdown();
 const r5 = (v) => Math.round(v / 5) * 5;
 const lo = Math.max(MIN_PRICE, r5(b.total * 0.8));
 const hi = Math.max(lo + 5, r5(b.total * 1.2));
-return `CHF ${lo}–${hi}` + (needsSize() ? " (exkl. Versand)" : "");
+return `CHF ${lo}–${hi}` + (needsPrint() ? " (exkl. Versand)" : "");
 }
 
 function buildMessage(priceText) {
@@ -502,7 +550,7 @@ m += `AUFTRAGSTYP: ${orderTypeLabel()}\n`;
 m += `SERVICE: ${s.service ? SVC_LABEL[s.service] : "-"}\n\n`;
 m += `MODELL\n`;
 m += `Bezeichnung : ${s.name}\n`;
-if (needsSize()) m += `Druckgrösse : ${selSize() ? selSize().label : "-"}\n`;
+m += `Grösse : ${selSize() ? selSize().label : "-"}\n`;
 if (needsComplexity()) m += `Komplexität : ${selComplexity() ? selComplexity().label : "-"}\n`;
 m += `Menge : ${qtyNum()} Stück\n`;
 m += `Beschreibung:\n${s.description}\n`;
@@ -560,7 +608,7 @@ if (!validateContact()) return;
 await reserveOrderNumber();
 const subject = encodeURIComponent(`Neue Bestellung – ${s.orderNo} – ${s.name}`);
 const body = encodeURIComponent(buildMessage(priceRangeText()));
-window.location.href = `mailto:skuvert.ch@gmail.com?subject=${subject}&body=${body}`;
+window.location.href = `mailto:simon.kull@skuvert.ch?subject=${subject}&body=${body}`;
 setTimeout(() => { s.sent = true; render(); }, 700);
 }
 
@@ -651,16 +699,17 @@ ${options.map(
 function stepModelHtml() {
 return `<div>
 <div class="rf-title">Modell-Details</div>
-<div class="rf-subtitle">Je mehr Details, desto präziser mein Angebot.</div>
+<div class="rf-subtitle">Je mehr Details, desto präziser unser Angebot.</div>
 <div class="rf-field">${label("Bezeichnung / Name des Objekts", true)}
 <input class="rf-input" id="f-name" value="${esc(s.name)}" placeholder="z. B. Werkzeughalter, Schlüsselanhänger …">
 </div>
-${needsSize() ? `<div class="rf-field">${label("Druckgrösse", true)}
+<div class="rf-field">${label("Grösse des Objekts", true)}
 ${tierGrid(SIZES, s.sizeIdx, "size")}
 ${isCustomSize() ? `<div class="notice-box compact" style="margin-top:12px"><span class="n-ic">${svg("icon-info")}</span><p><strong>${ON_REQUEST}</strong> – wir melden uns nach Prüfung bei dir. Bitte die ungefähren Masse in der Beschreibung angeben.</p></div>` : ""}
-</div>` : ""}
-${needsComplexity() ? `<div class="rf-field">${label("Komplexität", true)}
+</div>
+${needsComplexity() ? `<div class="rf-field">${label("Konstruktionsaufwand", true)}
 ${tierGrid(COMPLEXITY, s.complexIdx, "complex")}
+<div class="mat-desc" style="margin-top:8px">Der Konstruktionspreis richtet sich nach Aufwand <strong>und</strong> Grösse: dasselbe Teil klein zu konstruieren ist günstiger als gross.</div>
 </div>` : ""}
 <div class="rf-field">${label("Menge", true)}
 <input class="rf-input" id="f-qty" type="number" min="1" step="1" style="max-width:160px" value="${esc(s.qty)}">
@@ -697,7 +746,7 @@ ${stock.length ? `<div class="color-row">${stock.map(swatch).join("")}</div>` : 
 : `<div class="color-row">${stock.length ? stock.map(swatch).join("") : `<div class="mat-desc">Aktuell keine ${esc(s.material)}-Farbe am Lager.</div>`}</div>`;
 return `<div>
 <div class="rf-title">Material &amp; Farbe</div>
-<div class="rf-subtitle">Alle Materialien werden auf meinen Bambu Lab-Druckern verarbeitet.</div>
+<div class="rf-subtitle">Alle Materialien werden auf unseren Bambu Lab-Druckern verarbeitet.</div>
 <div class="rf-field">${label("Material", true)}
 <div class="chip-row">${keys.map((m) => `<div class="mat-chip${s.material === m ? " selected" : ""}" data-material="${m}">${m}</div>`).join("")}</div>
 <div class="mat-desc">${esc(desc)}</div>
@@ -752,7 +801,7 @@ ${paySelectHtml()}
 <button class="glass-btn glass-btn--dark send-btn" data-action="send-email" ${ready ? "" : "disabled"}>${svg("icon-mail")} Per E-Mail</button>
 <button class="glass-btn glass-btn--whatsapp send-btn" data-action="send-whatsapp" ${ready ? "" : "disabled"}>${svg("icon-whatsapp")} WhatsApp</button>
 </div>
-<div class="send-hint">Ich melde mich so schnell wie möglich mit einem Angebot.</div>
+<div class="send-hint">Wir melden uns so schnell wie möglich mit einem Angebot.</div>
 <div class="nav-row center-only"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button></div>
 </div>`;
 }
@@ -762,7 +811,7 @@ return `<div class="success-screen">
 <div class="success-check">✓</div>
 <h3>Bestellung gesendet!</h3>
 ${s.orderNo ? `<div class="order-no-badge">Deine Auftragsnummer<strong>${esc(s.orderNo)}</strong></div>` : ""}
-<p>Danke für deine Bestellung!<br>Ich melde mich so schnell wie möglich mit einem Angebot bei dir. Bitte gib bei Rückfragen deine Auftragsnummer an.</p>
+<p>Danke für deine Bestellung!<br>Wir melden uns so schnell wie möglich mit einem Angebot bei dir. Bitte gib bei Rückfragen deine Auftragsnummer an.</p>
 <button class="glass-btn glass-btn--accent" data-action="restart">Neue Anfrage starten</button>
 </div>`;
 }
@@ -811,7 +860,7 @@ function validateStep(id) {
 if (id === "project" && !s.service) { alert("Bitte wähle einen Service."); return false; }
 if (id === "model") {
 if (!s.name.trim() || !s.description.trim()) { alert("Bitte Bezeichnung und Beschreibung ausfüllen."); return false; }
-if (needsSize() && s.sizeIdx === null) { alert("Bitte eine Druckgrösse wählen."); return false; }
+if (s.sizeIdx === null) { alert("Bitte eine Grösse wählen."); return false; }
 if (needsComplexity() && s.complexIdx === null) { alert("Bitte eine Komplexitätsstufe wählen."); return false; }
 if (!(parseInt(s.qty, 10) >= 1)) { alert("Bitte eine Menge ab 1 Stück angeben."); return false; }
 }
@@ -896,6 +945,20 @@ bindText("f-notes", "notes");
 // Auftragsnummer schon beim Betreten des Kontakt-Schritts im Hintergrund reservieren.
 if (s.stepId === "contact" && !s.orderNo && !s.sent) { reserveOrderNumber(); }
 }
+
+// Idee aus dem Hero-Hintergrund übernehmen: Bezeichnung setzen und direkt in
+// den Modell-Schritt springen (Service-Default: Komplett-Paket).
+document.addEventListener("skv:idea", (ev) => {
+const term = String(ev.detail || "").trim();
+if (!term) return;
+if (s.sent) s = { ...initialState };
+s.name = term;
+if (!s.service) s.service = "both";
+s.stepId = "model";
+render();
+const sec = document.getElementById("anfrage");
+if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 loadInventory(); // Bestand vom Dashboard laden (Fallback: Defaults)
 render();

@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <style>
 .pay-methods{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 6px}
 .pay-badge{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 9px;min-width:46px;background:#fff;border:1px solid var(--border);border-radius:6px}
@@ -24,6 +24,9 @@
 </style>
 </head>
 <body>
+
+<!-- duenne Fortschrittsleiste am Seitenrand (rein CSS, scroll-timeline) -->
+<div class="scroll-progress" aria-hidden="true"></div>
 
 <!-- icon sprite (line icons only, no emoji) -->
 <svg style="display:none" aria-hidden="true">
@@ -48,6 +51,7 @@
 
 <section id="top" class="hero">
 <div class="hero-marquee" aria-hidden="true"></div>
+<div class="hero-scrim" aria-hidden="true"></div>
 <div class="hero-inner">
 <div class="hero-text">
 <div class="hero-logo" role="img" aria-label="Skuvert Logo"></div>
@@ -58,6 +62,7 @@
 <div class="cta-row">
 <a href="#anfrage" class="glass-btn glass-btn--accent">Anfrage starten</a>
 </div>
+<p class="hero-hint"><svg class="icon"><use href="#icon-info"/></svg>Tipp: Klick im Hintergrund auf eine Idee, wir übernehmen sie direkt in die Anfrage.</p>
 <div class="shipping-row">
 <span class="small-text">Versand nach</span>
 <span class="small-text">🇨🇭 🇩🇪 🇮🇹 🇫🇷 🇦🇹 🇱🇮</span>
@@ -68,7 +73,7 @@
 <video class="hero-clip is-current" src="img/hero-timelapse-1.mp4" poster="img/hero-timelapse.webp" autoplay muted playsinline preload="auto" width="1024" height="640" aria-label="Zeitraffer: ein Druckteil entsteht Schicht für Schicht"></video>
 <video class="hero-clip" src="img/hero-timelapse-2.mp4" muted playsinline preload="none" width="960" height="600" aria-label="Zeitraffer: mehrere Teile wachsen gleichzeitig auf dem Druckbett"></video>
 </div>
-<figcaption class="hero-media-cap"><span class="live-dot"></span>Live aus meiner Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
+<figcaption class="hero-media-cap"><span class="live-dot"></span>Live aus unserer Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
 </figure>
 </div>
 </section>
@@ -84,25 +89,25 @@
 <div class="glass-chip"><svg class="icon"><use href="#icon-send"/></svg></div>
 <span class="step-no">01</span>
 <h3>Anfrage</h3>
-<p>Du schickst mir deine Idee, Skizze oder Referenz über mein Anfrageformular.</p>
+<p>Du schickst uns deine Idee, Skizze oder Referenz über unser Anfrageformular.</p>
 </div>
 <div class="process-card glass-card reveal">
 <div class="glass-chip"><svg class="icon"><use href="#icon-handshake"/></svg></div>
 <span class="step-no">02</span>
 <h3>Persönliches Angebot</h3>
-<p>Ich melde mich mit einer ersten Einschätzung und dem finalen Angebot.</p>
+<p>Wir melden uns mit einer ersten Einschätzung und dem finalen Angebot.</p>
 </div>
 <div class="process-card glass-card reveal">
 <div class="glass-chip"><svg class="icon"><use href="#icon-printer"/></svg></div>
 <span class="step-no">03</span>
 <h3>Produktion</h3>
-<p>Dein Objekt entsteht in Präzisionsqualität auf meinen Bambu Lab P1S &amp; X2D.</p>
+<p>Dein Objekt entsteht in Präzisionsqualität auf unseren Bambu Lab P1S &amp; X2D.</p>
 </div>
 <div class="process-card glass-card reveal">
 <div class="glass-chip"><svg class="icon"><use href="#icon-truck"/></svg></div>
 <span class="step-no">04</span>
 <h3>Versand</h3>
-<p>Verpackt und versendet in die Schweiz, Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p>
+<p>Verpackt und versendet in die Schweiz, nach Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p>
 </div>
 </div>
 <!-- Making-of: ein realer Auftrag von der Skizze bis zum Versand -->
@@ -155,7 +160,7 @@
 <section id="ueber-mich" class="section section--alt">
 <div class="section-inner about-inner">
 <figure class="about-figure reveal">
-<div class="photo"><img src="img/werkstatt.jpg" alt="Mein Druckplatz mit Bambu Lab Drucker und Filament-Trockner" loading="lazy"></div>
+<div class="photo"><img src="img/werkstatt.jpg" alt="Unser Druckplatz mit Bambu Lab Drucker und Filament-Trockner" loading="lazy"></div>
 </figure>
 <div class="about-text reveal">
 <p class="eyebrow">Über mich</p>
@@ -196,19 +201,19 @@
 <div class="faq-list glass-card">
 <div class="faq-item reveal">
 <button class="faq-question"><span>Welche Materialien bietet ihr an?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
-<div class="faq-answer"><p>PLA, PETG, TPU und ABS, je nach Anwendung wähle ich mit dir das passende Material. PLA für Dekoartikel und Prototypen, PETG für funktionale Teile, TPU für flexible Anwendungen und ABS für Aussenbereiche.</p></div>
+<div class="faq-answer"><p>PLA, PETG, TPU und ABS, je nach Anwendung wählen wir mit dir das passende Material. PLA für Dekoartikel und Prototypen, PETG für funktionale Teile, TPU für flexible Anwendungen und ABS für Aussenbereiche.</p></div>
 </div>
 <div class="faq-item reveal">
 <button class="faq-question"><span>Wie lange dauert die Lieferung?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
-<div class="faq-answer"><p>5–10 Werktage ab Auftragsbestätigung, je nach Aufwand und aktueller Auslastung. Bei dringenden Anfragen sag mir einfach Bescheid.</p></div>
+<div class="faq-answer"><p>5–10 Werktage ab Auftragsbestätigung, je nach Aufwand und aktueller Auslastung. Bei dringenden Anfragen sag uns einfach Bescheid.</p></div>
 </div>
 <div class="faq-item reveal">
 <button class="faq-question"><span>In welche Länder versendet ihr?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
-<div class="faq-answer"><p>Aktuell versende ich in die Schweiz, nach Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p></div>
+<div class="faq-answer"><p>Aktuell versenden wir in die Schweiz, nach Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p></div>
 </div>
 <div class="faq-item reveal">
 <button class="faq-question"><span>Wie kann ich bezahlen?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
-<div class="faq-answer"><p>Bequem und sicher über Stripe – du wählst einfach deine bevorzugte Methode: Kredit-/Debitkarte, Apple&nbsp;Pay, Google&nbsp;Pay, TWINT oder Klarna. Nach der Auftragsbestätigung bekommst du von mir einen Zahlungslink – anklicken, Methode wählen, fertig.</p>
+<div class="faq-answer"><p>Bequem und sicher über Stripe – du wählst einfach deine bevorzugte Methode: Kredit-/Debitkarte, Apple&nbsp;Pay, Google&nbsp;Pay, TWINT oder Klarna. Nach der Auftragsbestätigung bekommst du von uns einen Zahlungslink – anklicken, Methode wählen, fertig.</p>
 <div class="pay-methods">
 <span class="pay-badge" title="Visa"><svg viewBox="0 0 48 16" xmlns="http://www.w3.org/2000/svg"><text x="24" y="13" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-style="italic" font-size="14" letter-spacing="1" fill="#1A1F71">VISA</text></svg></span>
 <span class="pay-badge" title="Mastercard"><svg viewBox="0 0 34 22" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="11" r="9" fill="#EB001B"/><circle cx="21" cy="11" r="9" fill="#F79E1B"/><path d="M17 4.2a9 9 0 0 0 0 13.6 9 9 0 0 0 0-13.6z" fill="#FF5F00"/></svg></span>
@@ -221,7 +226,7 @@
 </div>
 <div class="faq-item reveal">
 <button class="faq-question"><span>Welche Dateiformate kann ich einreichen?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
-<div class="faq-answer"><p>Alles Mögliche: JPG, PDF, MP4, DWG, STL, STEP oder 3MF, schick mir einfach, was du hast, ich schaue es mir an.</p></div>
+<div class="faq-answer"><p>Alles Mögliche: JPG, PDF, MP4, DWG, STL, STEP oder 3MF, schick uns einfach, was du hast, wir schauen es uns an.</p></div>
 </div>
 </div>
 </div>
@@ -256,7 +261,7 @@
 <p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
 </footer>
 
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 
 </body>
 </html>
