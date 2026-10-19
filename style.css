@@ -238,7 +238,7 @@ filter: drop-shadow(0 14px 30px rgba(26,34,51,.16));
 .hs-dim .v { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 
 .hero-media {
-position: relative; aspect-ratio: 16 / 10; width: 100%;
+position: relative; aspect-ratio: 16 / 9; width: 100%;
 overflow: hidden; isolation: isolate;
 clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px);
 }
@@ -246,13 +246,19 @@ clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100
 content: ""; position: absolute; inset: 0; pointer-events: none;
 background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 34%, rgba(26,34,51,.10));
 }
+/* Drei Uebergaenge im Wechsel, damit die Schleife nicht monoton wird:
+   heranschieben (Standard), zuruecknehmen, und ein Wisch von rechts.
+   Der abgehende Clip laeuft denselben Weg rueckwaerts. */
 .hero-clip {
 position: absolute; inset: 0; width: 100%; height: 100%;
 object-fit: cover; display: block;
 opacity: 0; transform: scale(1.07); filter: blur(5px);
-transition: opacity 1s ease-in-out, transform 1.6s cubic-bezier(.22,.68,.26,1), filter 1s ease-out;
+transition: opacity 1s ease-in-out, transform 1.6s cubic-bezier(.22,.68,.26,1),
+            filter 1s ease-out, clip-path 1.2s cubic-bezier(.3,.7,.3,1);
 }
-.hero-clip.is-current { opacity: 1; transform: none; filter: none; }
+.hero-clip:nth-child(3n+2) { transform: scale(.93); }
+.hero-clip:nth-child(3n+3) { transform: none; clip-path: inset(0 0 0 100%); }
+.hero-clip.is-current { opacity: 1; transform: none; filter: none; clip-path: inset(0); }
 
 .hero-media-cap {
 display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -261,7 +267,7 @@ margin-top: 14px; font-size: 12.5px; font-weight: 500; color: var(--muted);
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #E4572E; flex: none; animation: making-pulse 1.8s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-.hero-clip { transition: none; transform: none; filter: none; }
+.hero-clip, .hero-clip:nth-child(3n+2), .hero-clip:nth-child(3n+3) { transition: none; transform: none; filter: none; clip-path: none; }
 .live-dot { animation: none; }
 }
 .photo figcaption, .photo-cap {
