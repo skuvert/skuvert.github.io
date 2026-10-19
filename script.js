@@ -109,7 +109,9 @@ observer.unobserve(entry.target);
 targets.forEach((el) => observer.observe(el));
 })();
 
-// ---------- hero: zwei Timelapses abwechselnd, mit Crossfade ----------
+// ---------- hero: Timelapses in Endlosschleife, mit Crossfade ----------
+// Beliebig viele Clips: pro Video eine <video class="hero-clip"> in #hero-media,
+// der erste traegt zusaetzlich "is-current". Die Reihenfolge ist die Schleife.
 (function initHeroClips() {
 const clips = document.querySelectorAll("#hero-media .hero-clip");
 if (clips.length < 2) return;
@@ -500,7 +502,7 @@ function chf(v) { return v.toFixed(2).replace(/\.00$/, ".–"); }
 function priceBreakdown() {
 if (!priceKnown() || isCustomSize()) return null;
 const rows = [];
-let total = 0;
+let total = 0, saved = 0, discPct = 0;
 if (needsComplexity()) {
 const c = selComplexity(), z = selSize();
 const v = designPrice();
@@ -521,25 +523,43 @@ const print = base + matAdd + colAdd;
 const disc = qtyDiscount(q);
 total += print + SETUP_FEE;
 if (disc) {
-rows.push({ k: `Mengenrabatt (${disc * 100} %)`, v: -print * disc });
-total -= print * disc;
+saved = print * disc;
+discPct = disc * 100;
+rows.push({ k: `Mengenrabatt (${discPct} %)`, v: -saved });
+total -= saved;
 }
 }
 // Mindestauftragswert: darunter wird nie kalkuliert.
 const raised = total < MIN_PRICE;
 if (raised) rows.push({ k: `Mindestauftragswert`, v: MIN_PRICE - total });
-return { rows, total: Math.max(MIN_PRICE, total), raised };
+// saved nur melden, wenn der Rabatt auch wirklich beim Kunden ankommt – greift
+// der Mindestauftragswert, ist er rechnerisch wieder weg.
+return { rows, total: Math.max(MIN_PRICE, total), raised, saved: raised ? 0 : saved, discPct };
 }
 
-// Angezeigte Spanne: ±20 % um den berechneten Wert, auf 5.– gerundet.
+// Spanne zu einem Betrag: ±20 %, auf 5.– gerundet, nie unter dem Mindestwert.
+function rangeOf(v) {
+const r5 = (x) => Math.round(x / 5) * 5;
+const lo = Math.max(MIN_PRICE, r5(v * 0.8));
+const hi = Math.max(lo + 5, r5(v * 1.2));
+return `CHF ${lo}–${hi}`;
+}
+
+// Sanfter Hinweis auf die nächste Rabattstufe – grössere Lose lohnen sich für beide Seiten.
+function nextTierHint() {
+if (!needsPrint()) return "";
+const q = qtyNum();
+for (const [min, pct] of [[3, 5], [6, 10], [11, 15]]) {
+if (q < min) return `Noch ${min - q} Stück mehr → ${pct} % Mengenrabatt`;
+}
+return "";
+}
+
+// Angezeigte Spanne (für die Anfrage-Mail; die Sidebar baut sie selbst zusammen).
 function priceRangeText() {
 if (!priceKnown()) return "Wähle Service & Stufe für eine erste Schätzung";
 if (isCustomSize()) return ON_REQUEST;
-const b = priceBreakdown();
-const r5 = (v) => Math.round(v / 5) * 5;
-const lo = Math.max(MIN_PRICE, r5(b.total * 0.8));
-const hi = Math.max(lo + 5, r5(b.total * 1.2));
-return `CHF ${lo}–${hi}` + (needsPrint() ? " (exkl. Versand)" : "");
+return rangeOf(priceBreakdown().total) + (needsPrint() ? " (exkl. Versand)" : "");
 }
 
 function buildMessage(priceText) {
@@ -642,6 +662,27 @@ ${b.rows.map((r) => `<div class="bk-row${r.v < 0 ? " neg" : ""}"><span>${esc(r.k
 </div>`;
 }
 
+// Preiszeile: mit Mengenrabatt steht der Preis ohne Rabatt durchgestrichen davor,
+// damit der Kunde sieht, was die grössere Stückzahl bringt.
+function priceValueHtml() {
+if (!priceKnown()) return "CHF –";
+if (isCustomSize()) return esc(ON_REQUEST);
+const b = priceBreakdown();
+const now = rangeOf(b.total);
+return b.saved > 0 ? `<s class="pv-was">${rangeOf(b.total + b.saved)}</s><span class="pv-now">${now}</span>` : now;
+}
+
+// Darunter: entweder die erzielte Ersparnis oder der Hinweis auf die nächste Stufe.
+function savingsHtml() {
+if (!priceKnown() || isCustomSize()) return "";
+const b = priceBreakdown();
+if (b.saved > 0) {
+return `<div class="save-badge">${svg("icon-info")}<span>Mengenrabatt ${b.discPct} % – du sparst rund <strong>${chf(b.saved)}</strong></span></div>`;
+}
+const hint = nextTierHint();
+return hint ? `<div class="save-next">${esc(hint)}</div>` : "";
+}
+
 // Mitlaufende Zusammenfassung + Richtpreis (rechte Spalte, immer sichtbar).
 function sideSummaryHtml() {
 const known = priceKnown();
@@ -658,8 +699,9 @@ ${s.service && s.service !== "design" ? `<div class="side-row"><span class="k">M
 <div class="side-price">
 ${breakdownHtml()}
 <div class="pl">Geschätzter Preis</div>
-<div class="pv${known ? "" : " dim"}">${known ? esc(priceRangeText()) : "CHF –"}</div>
-<div class="ph">${isCustomSize() ? "Wir prüfen dein Objekt und melden uns mit einem Preis." : "Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot."}</div>
+<div class="pv${known ? "" : " dim"}">${priceValueHtml()}</div>
+${savingsHtml()}
+<div class="ph">${isCustomSize() ? "Wir prüfen dein Objekt und melden uns mit einem Preis." : "Erste Einschätzung – finaler Preis folgt persönlich mit dem Angebot." + (needsPrint() ? " Preise exkl. Versand." : "")}</div>
 </div>
 <div class="side-assure">${svg("icon-info")} Antwort meist innert 24 Stunden.</div>`;
 }

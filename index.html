@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <style>
 .pay-methods{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 6px}
 .pay-badge{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 9px;min-width:46px;background:#fff;border:1px solid var(--border);border-radius:6px}
@@ -69,10 +69,17 @@
 </div>
 </div>
 <figure class="hero-figure reveal">
+<div class="hero-stage">
+<span class="hs-corner tr" aria-hidden="true"></span>
+<span class="hs-corner bl" aria-hidden="true"></span>
+<!-- Weitere Timelapses: einfach eine zusaetzliche <video class="hero-clip"> Zeile
+     ergaenzen. Die Reihenfolge hier ist die Reihenfolge der Endlosschleife. -->
 <div class="hero-media" id="hero-media">
 <video class="hero-clip is-current" src="img/hero-timelapse-1.mp4" poster="img/hero-timelapse.webp" autoplay muted playsinline preload="auto" width="1024" height="640" aria-label="Zeitraffer: ein Druckteil entsteht Schicht für Schicht"></video>
 <video class="hero-clip" src="img/hero-timelapse-2.mp4" muted playsinline preload="none" width="960" height="600" aria-label="Zeitraffer: mehrere Teile wachsen gleichzeitig auf dem Druckbett"></video>
 </div>
+</div>
+<div class="hs-dim" aria-hidden="true"><span class="t"></span><span class="l"></span><span class="v">256 × 256 mm Druckraum</span><span class="l"></span><span class="t"></span></div>
 <figcaption class="hero-media-cap"><span class="live-dot"></span>Live aus unserer Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
 </figure>
 </div>
@@ -261,7 +268,7 @@
 <p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
 </footer>
 
-<script src="script.js?v=4"></script>
+<script src="script.js?v=5"></script>
 
 </body>
 </html>
