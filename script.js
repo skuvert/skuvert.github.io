@@ -109,6 +109,20 @@ observer.unobserve(entry.target);
 targets.forEach((el) => observer.observe(el));
 })();
 
+// ---------- Druckstunden: waechst taeglich weiter ----------
+// Basiswert und -datum stehen im HTML; seither kommen im Schnitt HOURS_PER_DAY
+// Stunden pro Tag dazu. Ohne JS bleibt schlicht der Basiswert stehen.
+const HOURS_PER_DAY = 2;  // Schnitt der letzten sieben Wochen
+(function initPrintHours() {
+const el = document.querySelector("[data-hours-base]");
+if (!el) return;
+const base = parseInt(el.dataset.hoursBase, 10);
+const start = Date.parse(el.dataset.hoursFrom + "T00:00:00");
+if (!Number.isFinite(base) || Number.isNaN(start)) return;
+const days = Math.max(0, Math.floor((Date.now() - start) / 86400000));
+el.textContent = String(base + days * HOURS_PER_DAY).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+})();
+
 // ---------- hero: Timelapses in Endlosschleife, mit Crossfade ----------
 // Beliebig viele Clips: pro Video eine <video class="hero-clip"> in #hero-media,
 // der erste traegt zusaetzlich "is-current". Die Reihenfolge ist die Schleife.
@@ -218,10 +232,10 @@ const COMPLEXITY = [
 // dsf = Grössenfaktor auf den Konstruktionspreis.
 const SIZES = [
 { level: 1, label: "Mini", sub: "bis 3 cm – Anhänger, Clips", price: 2, dsf: 0.75 },
-{ level: 2, label: "Klein", sub: "bis 6 × 6 × 6 cm", price: 5, dsf: 0.85 },
-{ level: 3, label: "Mittel", sub: "bis 12 × 12 × 12 cm", price: 14, dsf: 1 },
-{ level: 4, label: "Gross", sub: "bis 18 × 18 × 18 cm", price: 38, dsf: 1.25 },
-{ level: 5, label: "Riesig", sub: "bis 25 × 25 × 25 cm", price: 90, dsf: 1.5 },
+{ level: 2, label: "Klein", sub: "bis 6 × 6 × 6 cm", price: 7, dsf: 0.85 },
+{ level: 3, label: "Mittel", sub: "bis 12 × 12 × 12 cm", price: 13, dsf: 1 },
+{ level: 4, label: "Gross", sub: "bis 18 × 18 × 18 cm", price: 35, dsf: 1.25 },
+{ level: 5, label: "Riesig", sub: "bis 25 × 25 × 25 cm", price: 85, dsf: 1.5 },
 // Ein Teil, das grösser als das Druckbett ist -> wird geteilt gedruckt und
 // verklebt. Kein Richtpreis, sondern Einzelprüfung.
 { level: 0, label: "Variabel / Übergrösse", sub: "ein Teil über 25 cm – auf Anfrage", custom: true },
@@ -229,9 +243,8 @@ const SIZES = [
 
 // ===== Preisformel =====
 // Total = max(Mindestpreis, Konstruktion × Grössenfaktor + Rüstpauschale + Druck × Menge − Mengenrabatt)
-// Einstieg: Komplett-Paket, Einfach + Mini, 1 Stück, 1 Farbe = 6 + 7 + 2 = genau 15.–
-const MIN_PRICE = 15;   // Mindestauftragswert, egal wie klein
-const SETUP_FEE = 7;    // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
+const MIN_PRICE = 15;   // Mindestauftragswert, sobald Konstruktionsaufwand dazukommt
+const SETUP_FEE = 5;    // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
 const MATERIAL_FACTOR = { PLA: 1, PETG: 1.15, ABS: 1.2, TPU: 1.35 };
 const COLOR_FACTOR = 0.15; // je zusätzliche Farbe (Filamentwechsel + Purge-Abfall)
 // Rabatt steigt mit der Stückzahl, gedeckelt bei 15 %. Gilt nur auf den Druckanteil.
@@ -251,6 +264,13 @@ function selSize() { return s.sizeIdx === null ? null : SIZES[s.sizeIdx]; }
 function selComplexity() { return s.complexIdx === null ? null : COMPLEXITY[s.complexIdx]; }
 // Übergrösse gewählt -> kein berechneter Preis, sondern "auf Anfrage".
 function isCustomSize() { const z = selSize(); return !!(z && z.custom); }
+// Reiner Druck eines Klein- oder Miniteils: hier faellt kein Konstruktions-
+// aufwand an und der Auftrag ist in Minuten erledigt, darum gilt der
+// Mindestauftragswert nicht. Mini landet so bei 7.–, Klein bei 12.–.
+function minPrice() {
+const z = selSize();
+return s.service === "print" && z && (z.level === 1 || z.level === 2) ? 0 : MIN_PRICE;
+}
 // Alle preisrelevanten Stufen gewählt?
 function priceKnown() {
 if (!s.service) return false;
@@ -530,18 +550,22 @@ total -= saved;
 }
 }
 // Mindestauftragswert: darunter wird nie kalkuliert.
-const raised = total < MIN_PRICE;
-if (raised) rows.push({ k: `Mindestauftragswert`, v: MIN_PRICE - total });
+const floor = minPrice();
+const raised = total < floor;
+if (raised) rows.push({ k: `Mindestauftragswert`, v: floor - total });
 // saved nur melden, wenn der Rabatt auch wirklich beim Kunden ankommt – greift
 // der Mindestauftragswert, ist er rechnerisch wieder weg.
-return { rows, total: Math.max(MIN_PRICE, total), raised, saved: raised ? 0 : saved, discPct };
+return { rows, total: Math.max(floor, total), raised, saved: raised ? 0 : saved, discPct };
 }
 
 // Spanne zu einem Betrag: ±20 %, auf 5.– gerundet, nie unter dem Mindestwert.
 function rangeOf(v) {
-const r5 = (x) => Math.round(x / 5) * 5;
-const lo = Math.max(MIN_PRICE, r5(v * 0.8));
-const hi = Math.max(lo + 5, r5(v * 1.2));
+// kleine Betraege in 1er-, groessere in 5er-Schritten – sonst verschwindet
+// der Unterschied zwischen 7.– und 12.– im groben Raster
+const step = v < 20 ? 1 : 5;
+const r = (x) => Math.round(x / step) * step;
+const lo = Math.max(minPrice(), r(v * 0.8));
+const hi = Math.max(lo + step, r(v * 1.2));
 return `CHF ${lo}–${hi}`;
 }
 
