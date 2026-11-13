@@ -1,11 +1,14 @@
-// ---------- hero marquee background ----------
-// Fünf Zeilen mit Beispiel-Ideen, abwechselnd nach links/rechts laufend.
-// Jede Zeile enthält die Begriffe doppelt -> nahtlose Endlosschleife (translateX 50%).
-(function initHeroMarquee() {
-const wrap = document.querySelector(".hero-marquee");
-if (!wrap) return;
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Eine Zeile pro Kategorie – abwechselnd nach rechts/links.
+// ---------- Hero: Ideen-Blasen ----------
+// Ersetzen die laufenden Zeilen. Zehn Begriffe schweben in zwei Bändern über
+// und unter dem Inhalt (auf dem Handy: eine wischbare Chip-Reihe). Klick
+// übernimmt den Begriff in die Anfrage, "Andere Ideen" würfelt neu.
+(function initHeroIdeas() {
+const wrap = document.getElementById("hero-ideas");
+const mobile = document.getElementById("hero-ideas-mobile");
+if (!wrap && !mobile) return;
+
 const rows = [
 // Halter & Ständer
 ["Zahnbürstenhalter", "Handyständer", "Kopfhörerhalter", "Tabletständer", "Fernbedienungshalter", "Brillenhalter", "Flaschenhalter", "Stifthalter", "Kopfhörerständer", "Ladekabel-Halter"],
@@ -24,27 +27,130 @@ const rows = [
 // Persönliches & Geschenke
 ["Schlüsselanhänger", "Namensschild", "Keksausstecher", "Lesezeichen", "Initialen-Deko", "Schmuckständer", "Geschenkbox", "Tischkartenhalter", "Foto-Würfel", "Ringschale"],
 ];
-const durations = [60, 72, 64, 78, 66, 74, 62, 70];
 
-rows.forEach((terms, i) => {
-const row = document.createElement("div");
-row.className = "marquee-row";
-const track = document.createElement("div");
-// gerade Zeilen (0,2,4) nach rechts, ungerade (1,3) nach links
-track.className = "marquee-track" + (i % 2 === 0 ? " rtl" : "");
-track.style.setProperty("--dur", durations[i] + "s");
-const group = terms.map((t) => `<span class="mq-item">${t}</span>`).join("");
-track.innerHTML = group + group; // verdoppeln für nahtlose Schleife
-row.appendChild(track);
-wrap.appendChild(row);
-});
+// Plätze in Prozent: x/y Position, d = Tiefe (1 = vorne, bewegt sich stärker), s = Grösse
+const SLOTS = [
+{ x: 9, y: 16, d: 1, s: 1 }, { x: 27, y: 19, d: .65, s: .55 }, { x: 47, y: 16, d: .85, s: .8 },
+{ x: 67, y: 19, d: .6, s: .5 }, { x: 88, y: 16, d: .9, s: .9 },
+{ x: 8, y: 90, d: .9, s: .9 }, { x: 25, y: 94, d: .65, s: .55 }, { x: 45, y: 90, d: 1, s: 1 },
+{ x: 66, y: 95, d: .6, s: .5 }, { x: 86, y: 90, d: .85, s: .8 },
+];
 
-// Klick auf einen Begriff im Hintergrund: übernimmt ihn als Bezeichnung und
-// springt ins Formular. Das Formular hört auf das Event (siehe unten).
-wrap.addEventListener("click", (e) => {
-const item = e.target.closest(".mq-item");
+const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+// erst je ein Begriff pro Kategorie, dann der Rest zufällig -> bunte Mischung
+function pick(n) {
+const perRow = shuffle(rows).map((r) => r[Math.floor(Math.random() * r.length)]);
+const rest = shuffle(rows.flat().filter((t) => !perRow.includes(t)));
+return perRow.concat(rest).slice(0, n);
+}
+
+function bubble(term, i, slot) {
+const el = document.createElement("button");
+el.type = "button";
+el.className = "idea";
+el.textContent = term;
+el.style.setProperty("--i", i);
+if (slot) {
+el.style.setProperty("--x", slot.x); el.style.setProperty("--y", slot.y);
+el.style.setProperty("--d", slot.d); el.style.setProperty("--s", slot.s);
+}
+return el;
+}
+
+function renderIdeas() {
+const terms = pick(SLOTS.length);
+if (wrap) { wrap.innerHTML = ""; terms.forEach((t, i) => wrap.appendChild(bubble(t, i, SLOTS[i]))); }
+if (mobile) { mobile.innerHTML = ""; terms.forEach((t, i) => mobile.appendChild(bubble(t, i))); }
+}
+renderIdeas();
+
+const onPick = (e) => {
+const item = e.target.closest(".idea");
 if (!item) return;
 document.dispatchEvent(new CustomEvent("skv:idea", { detail: item.textContent.trim() }));
+};
+if (wrap) wrap.addEventListener("click", onPick);
+if (mobile) mobile.addEventListener("click", onPick);
+
+const btn = document.getElementById("idea-shuffle");
+if (btn) btn.addEventListener("click", () => {
+const current = document.querySelectorAll(".idea");
+if (REDUCED || !current.length) { renderIdeas(); return; }
+current.forEach((el) => el.classList.add("is-leaving"));
+setTimeout(renderIdeas, 380);
+});
+
+// Parallaxe: Logo und Blasen folgen der Maus leicht, je nach Tiefe unterschiedlich stark
+const hero = document.querySelector(".hero");
+if (hero && !REDUCED && window.matchMedia("(hover: hover)").matches) {
+hero.addEventListener("pointermove", (e) => {
+const r = hero.getBoundingClientRect();
+const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+hero.style.setProperty("--px", (x * -22).toFixed(1));
+hero.style.setProperty("--py", (y * -16).toFixed(1));
+});
+hero.addEventListener("pointerleave", () => { hero.style.setProperty("--px", 0); hero.style.setProperty("--py", 0); });
+}
+})();
+
+// ---------- Navigation: kompakter beim Scrollen, aktiver Abschnitt markiert ----------
+(function initNav() {
+const nav = document.getElementById("nav");
+if (!nav) return;
+const onScroll = () => nav.classList.toggle("is-scrolled", window.scrollY > 40);
+onScroll();
+window.addEventListener("scroll", onScroll, { passive: true });
+const links = [...nav.querySelectorAll(".nav-links a")];
+if (!links.length || !("IntersectionObserver" in window)) return;
+const byId = new Map(links.map((a) => [a.getAttribute("href").slice(1), a]));
+const io = new IntersectionObserver((entries) => {
+entries.forEach((en) => {
+if (!en.isIntersecting) return;
+links.forEach((a) => a.classList.remove("is-active"));
+const a = byId.get(en.target.id);
+if (a) a.classList.add("is-active");
+});
+}, { rootMargin: "-40% 0px -55% 0px" });
+byId.forEach((_, id) => { const sec = document.getElementById(id); if (sec) io.observe(sec); });
+})();
+
+// ---------- Tilt: Karten neigen sich leicht zur Maus (echte Tiefe statt Hover-Farbe) ----------
+(function initTilt() {
+if (REDUCED || !window.matchMedia("(hover: hover)").matches) return;
+document.querySelectorAll(".tilt").forEach((el) => {
+const max = parseFloat(el.dataset.tilt) || 5;
+el.addEventListener("pointermove", (e) => {
+const r = el.getBoundingClientRect();
+const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+el.style.setProperty("--rx", (x * max).toFixed(2));
+el.style.setProperty("--ry", (-y * max).toFixed(2));
+});
+el.addEventListener("pointerleave", () => { el.style.setProperty("--rx", 0); el.style.setProperty("--ry", 0); });
+});
+})();
+
+// ---------- Überschriften: Wörter laufen einzeln ein ----------
+(function initSplit() {
+if (REDUCED) return;
+document.querySelectorAll(".split").forEach((el) => {
+let i = 0;
+const walk = (node) => {
+[...node.childNodes].forEach((n) => {
+if (n.nodeType === 3) {
+const frag = document.createDocumentFragment();
+n.textContent.split(/(\s+)/).forEach((part) => {
+if (!part) return;
+if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+const sp = document.createElement("span");
+sp.className = "w"; sp.style.setProperty("--i", i++); sp.textContent = part;
+frag.appendChild(sp);
+});
+n.replaceWith(frag);
+} else if (n.nodeType === 1 && n.tagName !== "BR") walk(n);
+});
+};
+walk(el);
+el.classList.add("is-split");
 });
 })();
 
@@ -90,7 +196,7 @@ answer.style.height = opening ? answer.scrollHeight + "px" : "0px";
 
 // ---------- scroll reveal ----------
 (function initReveal() {
-const targets = document.querySelectorAll(".reveal");
+const targets = document.querySelectorAll(".reveal, .split, .process-wrap");
 if (!("IntersectionObserver" in window) || targets.length === 0) {
 targets.forEach((el) => el.classList.add("in-view"));
 return;
@@ -107,6 +213,23 @@ observer.unobserve(entry.target);
 { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
 );
 targets.forEach((el) => observer.observe(el));
+
+// Bei schnellem Scrollen (Trackpad-Fling) kann ein Element am Observer vorbei-
+// rutschen, ohne je zu schneiden -> alles, was schon oberhalb der Sichtkante
+// liegt, nachträglich einblenden.
+const pending = new Set(targets);
+let ticking = false;
+window.addEventListener("scroll", () => {
+if (ticking) return;
+ticking = true;
+requestAnimationFrame(() => {
+ticking = false;
+pending.forEach((el) => {
+if (el.classList.contains("in-view")) { pending.delete(el); return; }
+if (el.getBoundingClientRect().top < window.innerHeight - 40) { el.classList.add("in-view"); observer.unobserve(el); pending.delete(el); }
+});
+});
+}, { passive: true });
 })();
 
 // ---------- Druckstunden: waechst taeglich weiter ----------
@@ -161,9 +284,9 @@ current = next();
 const mount = document.getElementById("request-form");
 if (!mount) return;
 
-const INK = "#1A2233";
-const MUTED = "#5B6675";
-const ACCENT = "#2E5E8F";
+const INK = "#14213A";
+const MUTED = "#55657C";
+const ACCENT = "#2E68AE";
 
 // ===== Auftragsnummer-Konfiguration =====
 // Nach dem Deployen des Google Apps Scripts (siehe auftragsnummer.gs) hier die
@@ -384,6 +507,7 @@ name: "", description: "", qty: "1", material: "PLA", colors: [],
 firstName: "", lastName: "", email: "", phone: "", notes: "",
 payment: "link", invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
+files: [], // File-Objekte aus dem Datei-Feld (nie per push ändern, immer neu zuweisen)
 };
 let s = { ...initialState };
 
@@ -435,18 +559,19 @@ st.id = "skv-legal-modal-style";
 st.textContent = `
 .skv-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex;
   align-items: center; justify-content: center; padding: 20px;
-  background: rgba(26,34,51,0.5); animation: skvFade .18s ease; }
+  background: rgba(20,33,58,0.45); backdrop-filter: blur(8px); animation: skvFade .22s ease; }
 @keyframes skvFade { from { opacity: 0; } to { opacity: 1; } }
 .skv-modal { width: min(720px, 100%); max-height: min(84vh, 900px); display: flex;
-  flex-direction: column; background: #fff; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 24px 70px rgba(26,34,51,0.3); }
+  flex-direction: column; background: #fff; border-radius: 24px; overflow: hidden;
+  box-shadow: 0 30px 90px -20px rgba(20,33,58,0.4); animation: skvPop .3s cubic-bezier(.34,1.56,.64,1); }
+@keyframes skvPop { from { transform: scale(.94) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 .skv-modal-head { display: flex; align-items: center; justify-content: space-between;
   gap: 16px; padding: 16px 20px; border-bottom: 1px solid #E3E7ED; background: #fff; }
 .skv-modal-title { font-weight: 600; font-size: 16px; color: ${INK}; letter-spacing: -0.01em; }
 .skv-modal-close { flex: none; width: 34px; height: 34px; border: none; cursor: pointer;
-  border-radius: 6px; background: #F5F7F9; color: ${INK}; font-size: 22px; line-height: 1;
+  border-radius: 50%; background: #F4F8FC; color: ${INK}; font-size: 22px; line-height: 1;
   display: flex; align-items: center; justify-content: center; transition: background .15s; }
-.skv-modal-close:hover { background: #E3E7ED; }
+.skv-modal-close:hover { background: #E7F0FA; }
 .skv-modal-body { padding: 22px 24px 26px; overflow-y: auto; -webkit-overflow-scrolling: touch;
   color: #334155; font-size: 14.5px; line-height: 1.65; }
 .skv-modal-body h1, .skv-modal-body h2 { font-size: 17px; font-weight: 700; color: ${INK};
@@ -461,8 +586,8 @@ st.textContent = `
 .skv-modal-body strong { color: ${INK}; font-weight: 700; }
 .skv-modal-loading { color: ${MUTED}; }
 .order-no-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
-  margin: 4px auto 14px; padding: 10px 22px; border-radius: 8px;
-  background: #EAF0F6; border: 1px solid #E3E7ED;
+  margin: 4px auto 14px; padding: 12px 26px; border-radius: 999px;
+  background: #E7F0FA; border: 1px solid #D4E4F5;
   font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${MUTED}; }
 .order-no-badge strong { font-size: 20px; letter-spacing: 0.02em; text-transform: none;
   color: ${ACCENT}; font-weight: 700; }`;
@@ -622,6 +747,10 @@ if (s.payment === "invoice") {
 m += `Rechnung akzeptiert : Ja – verbindliche Zahlungszusage, Zahlungsziel 14 Tage nach Rechnungsstellung.\n`;
 }
 if (s.notes) m += `\nANMERKUNGEN:\n${s.notes}\n`;
+if (s.files.length) {
+m += `\nANHANG (${s.files.length})\n`;
+s.files.forEach((f) => { m += `- ${f.name} (${fmtSize(f.size)})\n`; });
+}
 m += `\nKONTAKT\n`;
 m += `Name : ${s.firstName} ${s.lastName}\n`;
 m += `E-Mail: ${s.email}\n`;
@@ -664,6 +793,52 @@ window.open(`https://wa.me/41774646298?text=${text}`, "_blank");
 setTimeout(() => { s.sent = true; render(); }, 700);
 }
 
+// ===== Anhänge =====
+// mailto:/wa.me können keine Dateien mitgeben (Browser-Grenze). Wo das Gerät die
+// System-Teilen-Funktion mit Dateien kann (Handy, Windows-Chrome), gehen Text
+// und Dateien zusammen raus; sonst bleibt der Hinweis, im Mail-/WhatsApp-
+// Fenster nochmals anzuhängen. Die Dateinamen stehen immer in der Nachricht.
+const FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.pdf,.mp4,.mov,.stl,.obj,.step,.stp,.3mf,.dxf,.dwg,.f3d";
+const FILE_MAX_MB = 25;
+function fmtSize(b) { return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1).replace(".0", "") + " MB"; }
+function addFiles(list) {
+const next = [...s.files];
+for (const f of list) {
+if (next.some((x) => x.name === f.name && x.size === f.size)) continue;
+if (f.size > FILE_MAX_MB * 1048576) { alert(`"${f.name}" ist grösser als ${FILE_MAX_MB} MB – bitte komprimieren oder per Link schicken.`); continue; }
+next.push(f);
+}
+s.files = next;
+}
+function canShareFiles() {
+try { return s.files.length > 0 && !!navigator.canShare && navigator.canShare({ files: s.files }); } catch (_) { return false; }
+}
+function filesHtml() {
+return `<label class="file-drop" data-drop>
+<input type="file" id="f-files" multiple accept="${FILE_ACCEPT}">
+<span class="fd-ic">${svg("icon-paperclip")}</span>
+<span><span class="fd-t">Dateien auswählen oder hierher ziehen</span><span class="fd-s">Bilder · PDF · STL · OBJ · STEP · 3MF · DXF – bis ${FILE_MAX_MB} MB pro Datei. Optional, hilft uns aber sehr.</span></span>
+</label>
+${s.files.length ? `<div class="file-list">${s.files.map((f, i) => `<span class="file-pill">${esc(f.name)} <small>${fmtSize(f.size)}</small><button type="button" data-remove-file="${i}" aria-label="Datei entfernen">×</button></span>`).join("")}</div>` : ""}`;
+}
+function attachNoteHtml() {
+if (!s.files.length) return `<div class="notice-box compact"><span class="n-ic">${svg("icon-info")}</span><p>Du kannst Skizzen, Fotos oder 3D-Dateien auch <strong>direkt im Mail- oder WhatsApp-Fenster</strong> anhängen, bevor du sendest.</p></div>`;
+const n = s.files.length;
+return canShareFiles()
+? `<div class="notice-box compact"><span class="n-ic">${svg("icon-paperclip")}</span><p><strong>${n} ${n === 1 ? "Datei" : "Dateien"} ausgewählt.</strong> Mit „Teilen mit Anhang" gehen Text und Dateien zusammen an Mail oder WhatsApp. Bei E-Mail/WhatsApp direkt bitte die Dateien im geöffneten Fenster nochmals anhängen.</p></div>`
+: `<div class="notice-box compact"><span class="n-ic">${svg("icon-paperclip")}</span><p><strong>${n} ${n === 1 ? "Datei" : "Dateien"} ausgewählt.</strong> Dein Browser kann sie nicht automatisch mitgeben – bitte im geöffneten Mail- oder WhatsApp-Fenster nochmals anhängen. Die Dateinamen stehen bereits in der Nachricht.</p></div>`;
+}
+async function sendShare() {
+if (!validateContact()) return;
+await reserveOrderNumber();
+try {
+await navigator.share({ title: `Neue Bestellung – ${s.orderNo} – ${s.name}`, text: buildMessage(priceRangeText()), files: s.files });
+s.sent = true; render();
+} catch (err) {
+if (err && err.name !== "AbortError") alert("Teilen hat nicht geklappt – bitte per E-Mail oder WhatsApp senden und die Dateien dort anhängen.");
+}
+}
+
 function label(text, required) {
 return `<label class="rf-label">${esc(text)} ${required ? '<span class="req">*</span>' : ""}</label>`;
 }
@@ -671,9 +846,10 @@ return `<label class="rf-label">${esc(text)} ${required ? '<span class="req">*</
 function progressHtml() {
 const list = steps();
 const cur = list.indexOf(s.stepId);
-return `<div class="rf-progress">
-<div class="rf-bars">${list.map((id, idx) => `<div class="rf-seg ${idx < cur ? "done" : idx === cur ? "cur" : ""}"></div>`).join("")}</div>
-<div class="rf-steplabels">${list.map((id, idx) => `<span class="${idx === cur ? "cur" : idx < cur ? "done" : ""}">${STEP_LABEL[id]}</span>`).join("")}</div>
+const pct = list.length > 1 ? cur / (list.length - 1) : 0;
+return `<div class="rf-steps">
+<span class="rf-line" style="width:calc((100% - 64px) * ${pct})"></span>
+${list.map((id, idx) => `<div class="rf-step ${idx < cur ? "done" : idx === cur ? "cur" : ""}"><i>${idx < cur ? svg("icon-check") : idx + 1}</i><span>${STEP_LABEL[id]}</span></div>`).join("")}
 </div>`;
 }
 
@@ -784,7 +960,9 @@ ${tierGrid(COMPLEXITY, s.complexIdx, "complex")}
 <div class="rf-field">${label("Beschreibung & Anforderungen", true)}
 <textarea class="rf-input" id="f-description" placeholder="Grösse, Funktion, Toleranzen, Masse, besondere Anforderungen …">${esc(s.description)}</textarea>
 </div>
-<div class="notice-box"><span class="n-ic">${svg("icon-info")}</span><p>Bitte füge Skizzen, Referenzbilder oder 3D-Dateien <strong>direkt beim Senden</strong> als Anhang hinzu. Formate: Bilder · PDF · STL · OBJ · STEP · 3MF · DXF</p></div>
+<div class="rf-field">${label("Skizzen, Fotos oder 3D-Dateien")}
+${filesHtml()}
+</div>
 <div class="nav-row"><button class="glass-btn glass-btn--ghost" data-action="back">← Zurück</button><button class="glass-btn glass-btn--accent" data-action="next">Weiter →</button></div>
 </div>`;
 }
@@ -858,12 +1036,13 @@ return `<div>
 <div class="rf-field tight">${label("Telefon / WhatsApp")}<input class="rf-input" id="f-phone" value="${esc(s.phone)}" placeholder="+41 79 000 00 00"></div>
 <div class="rf-field">${label("Weitere Anmerkungen")}<textarea class="rf-input" id="f-notes" placeholder="Preislimit, Wunschdatum, Sonderwünsche …">${esc(s.notes)}</textarea></div>
 ${paySelectHtml()}
-<div class="notice-box compact"><span class="n-ic">${svg("icon-info")}</span><p>Bitte füge Skizzen, Fotos oder 3D-Dateien <strong>direkt im Mail- oder WhatsApp-Fenster</strong> als Anhang hinzu, bevor du sendest.</p></div>
+${attachNoteHtml()}
 <label class="agb-check${s.agb ? " on" : ""}" data-action="toggle-agb">
 <input type="checkbox" ${s.agb ? "checked" : ""} tabindex="-1" aria-label="AGB und Datenschutzerklärung akzeptieren" style="pointer-events:none">
 <span>Ich habe die <a href="agb.html" target="_blank" rel="noopener" data-legal="agb">AGB</a> und die <a href="datenschutz.html" target="_blank" rel="noopener" data-legal="datenschutz">Datenschutzerklärung</a> gelesen und akzeptiere sie. <span class="req">*</span></span>
 </label>
 <div class="send-grid">
+${canShareFiles() ? `<button class="glass-btn glass-btn--accent send-btn" data-action="send-share" ${ready ? "" : "disabled"}>${svg("icon-share")} Teilen mit Anhang</button>` : ""}
 <button class="glass-btn glass-btn--dark send-btn" data-action="send-email" ${ready ? "" : "disabled"}>${svg("icon-mail")} Per E-Mail</button>
 <button class="glass-btn glass-btn--whatsapp send-btn" data-action="send-whatsapp" ${ready ? "" : "disabled"}>${svg("icon-whatsapp")} WhatsApp</button>
 </div>
@@ -911,7 +1090,7 @@ if (prevTop !== null) {
 const newAnchor = mount.querySelector(".rf-shell");
 if (newAnchor) {
 const delta = newAnchor.getBoundingClientRect().top - prevTop;
-if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" }); // sofort, sonst animiert scroll-behavior: smooth die Korrektur
 }
 }
 }
@@ -990,6 +1169,19 @@ act("next", () => nav(1));
 act("back", () => nav(-1));
 act("send-email", sendEmail);
 act("send-whatsapp", sendWhatsApp);
+act("send-share", sendShare);
+
+const fileInput = mount.querySelector("#f-files");
+if (fileInput) {
+fileInput.addEventListener("change", () => { addFiles(fileInput.files); render(); });
+const drop = mount.querySelector("[data-drop]");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("is-over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("is-over"); }));
+drop.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.files.length) { addFiles(e.dataTransfer.files); render(); } });
+}
+mount.querySelectorAll("[data-remove-file]").forEach((el) => {
+el.addEventListener("click", (e) => { e.preventDefault(); const i = Number(el.dataset.removeFile); s.files = s.files.filter((_, k) => k !== i); render(); });
+});
 act("restart", () => { s = { ...initialState }; render(); });
 
 bindText("f-name", "name");

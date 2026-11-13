@@ -8,20 +8,13 @@
 <meta property="og:title" content="Skuvert, Custom 3D Service">
 <meta property="og:description" content="Individuelles 3D-Design und Präzisionsdruck aus der Schweiz, von der ersten Skizze bis zum fertigen Objekt.">
 <meta property="og:type" content="website">
+<meta name="theme-color" content="#2E68AE">
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="apple-touch-icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
-<style>
-.pay-methods{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 6px}
-.pay-badge{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 9px;min-width:46px;background:#fff;border:1px solid var(--border);border-radius:6px}
-.pay-badge svg{display:block;height:16px;width:auto}
-.pay-note{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted)}
-.pay-note svg{height:15px;width:auto;flex:none}
-.footer .pay-methods{justify-content:center}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -45,33 +38,56 @@
 <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></symbol>
 <symbol id="icon-whatsapp" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 9c0 4 2.5 6.5 6.5 6.5" stroke-width="1.4"/></symbol>
 <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.7" fill="currentColor" stroke="none"/></symbol>
+<symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></symbol>
+<symbol id="icon-paperclip" viewBox="0 0 24 24"><path d="M21 12.5l-8.2 8.2a5.5 5.5 0 0 1-7.8-7.8L13.6 4.3a3.5 3.5 0 0 1 5 5l-8.7 8.6a1.5 1.5 0 0 1-2.1-2.1L15.6 8"/></symbol>
+<symbol id="icon-share" viewBox="0 0 24 24"><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6h14v-6"/></symbol>
+<symbol id="icon-ruler" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></symbol>
+<symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
 </svg>
+
+<header class="nav" id="nav">
+<a class="nav-brand" href="#top" aria-label="Zum Seitenanfang"><span class="nav-logo" role="img" aria-label="Skuvert Logo"></span><span class="nav-word">SKUVERT</span></a>
+<nav class="nav-links" aria-label="Hauptnavigation">
+<a href="#ablauf">Ablauf</a>
+<a href="#anfrage">Anfrage</a>
+<a href="#ueber-mich">Über mich</a>
+<a href="#faq">FAQ</a>
+</nav>
+<a href="#anfrage" class="glass-btn glass-btn--accent">Anfrage starten</a>
+</header>
 
 <main>
 
 <section id="top" class="hero">
-<div class="hero-marquee" aria-hidden="true"></div>
-<div class="hero-scrim" aria-hidden="true"></div>
+<div class="hero-bg" aria-hidden="true">
+<span class="orb orb--1"></span>
+<span class="orb orb--2"></span>
+<span class="orb orb--3"></span>
+<div class="hero-logo-bg"></div>
+</div>
+<!-- Ideen-Blasen (JS fuellt sie): klick uebernimmt den Begriff in die Anfrage -->
+<div class="hero-ideas" id="hero-ideas"></div>
 <div class="hero-inner">
 <div class="hero-text">
-<div class="hero-logo" role="img" aria-label="Skuvert Logo"></div>
 <div class="hero-badge"><span class="hero-badge-dot"></span>Design + Druck ab 15 CHF</div>
-<p class="eyebrow">Skuvert · Custom 3D Service</p>
-<h1 class="hero-title">Deine Idee.<br><span class="accent">Unser Druck.</span></h1>
+<h1 class="hero-title split">Deine Idee.<br><span class="accent">Unser Druck.</span></h1>
 <p class="body-text">Individuelles 3D-Design und Präzisionsdruck aus der Schweiz, von der ersten Skizze bis zum fertigen Objekt bei dir zuhause.</p>
 <div class="cta-row">
-<a href="#anfrage" class="glass-btn glass-btn--accent">Anfrage starten</a>
+<a href="#anfrage" class="glass-btn glass-btn--accent glass-btn--lg">Anfrage starten <svg class="icon arrow"><use href="#icon-arrow"/></svg></a>
+<a href="#ablauf" class="glass-btn glass-btn--ghost glass-btn--lg">So läuft's ab</a>
 </div>
-<p class="hero-hint"><svg class="icon"><use href="#icon-info"/></svg>Tipp: Klick im Hintergrund auf eine Idee, wir übernehmen sie direkt in die Anfrage.</p>
+<div class="hero-meta">
+<div class="idea-hint"><svg class="icon"><use href="#icon-info"/></svg><span>Klick auf eine Idee, wir übernehmen sie in die Anfrage.</span><button class="idea-shuffle" id="idea-shuffle" type="button"><svg class="icon"><use href="#icon-refresh"/></svg>Andere Ideen</button></div>
 <div class="shipping-row">
-<span class="small-text">Versand nach</span>
-<span class="small-text">🇨🇭 🇩🇪 🇮🇹 🇫🇷 🇦🇹 🇱🇮</span>
+<span>Versand nach</span>
+<span class="flag-pills"><span title="Schweiz">🇨🇭</span><span title="Deutschland">🇩🇪</span><span title="Italien">🇮🇹</span><span title="Frankreich">🇫🇷</span><span title="Österreich">🇦🇹</span><span title="Liechtenstein">🇱🇮</span></span>
 </div>
+</div>
+<div class="hero-ideas-mobile" id="hero-ideas-mobile"></div>
 </div>
 <figure class="hero-figure reveal">
-<div class="hero-stage">
-<span class="hs-corner tr" aria-hidden="true"></span>
-<span class="hs-corner bl" aria-hidden="true"></span>
+<div class="hero-stage tilt" data-tilt="4">
 <!-- Weitere Timelapses: einfach eine zusaetzliche <video class="hero-clip"> Zeile
      ergaenzen. Die Reihenfolge hier ist die Reihenfolge der Endlosschleife. -->
 <div class="hero-media" id="hero-media">
@@ -82,43 +98,50 @@
 <video class="hero-clip" src="img/hero-timelapse-5.mp4" muted playsinline preload="none" width="1024" height="576" aria-label="Zeitraffer: eine graue Vase mit Wellenstruktur entsteht Schicht für Schicht"></video>
 <video class="hero-clip" src="img/hero-timelapse-6.mp4" muted playsinline preload="none" width="1024" height="576" aria-label="Zeitraffer: eine grosse weisse Schale wird gedruckt"></video>
 </div>
+<span class="stage-chip stage-chip--live"><span class="live-dot"></span>Live aus unserer Werkstatt</span>
+<span class="stage-chip stage-chip--dim"><svg class="icon"><use href="#icon-ruler"/></svg>256 × 256 mm Druckraum</span>
 </div>
-<div class="hs-dim" aria-hidden="true"><span class="t"></span><span class="l"></span><span class="v">256 × 256 mm Druckraum</span><span class="l"></span><span class="t"></span></div>
-<figcaption class="hero-media-cap"><span class="live-dot"></span>Live aus unserer Werkstatt · Bambu Lab P1S &amp; X2D</figcaption>
+<figcaption class="hero-media-cap">Bambu Lab P1S &amp; X2D</figcaption>
 </figure>
 </div>
 </section>
 
+<div class="wave wave--to-surface" aria-hidden="true"></div>
+
 <section id="ablauf" class="section section--alt">
+<div class="section-glow" aria-hidden="true"><span class="g1"></span><span class="g2"></span></div>
 <div class="section-inner">
 <div class="header-block reveal">
 <p class="eyebrow">So läuft's ab</p>
-<h2 class="heading-2">Vom Entwurf zum fertigen Objekt</h2>
+<h2 class="heading-2 split">Vom Entwurf zum fertigen Objekt</h2>
+<p class="body-text">Vier Schritte, ein Ansprechpartner. Du bringst die Idee, wir kümmern uns um alles bis zum Paket vor deiner Tür.</p>
 </div>
+<div class="process-wrap">
+<svg class="process-path" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+<path d="M0 30 C 150 0, 300 60, 450 30 S 750 0, 900 30 S 1100 60, 1200 30"/>
+<path class="draw" d="M0 30 C 150 0, 300 60, 450 30 S 750 0, 900 30 S 1100 60, 1200 30"/>
+</svg>
 <div class="card-grid">
-<div class="process-card glass-card reveal">
-<div class="glass-chip"><svg class="icon"><use href="#icon-send"/></svg></div>
-<span class="step-no">01</span>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-send"/></svg></div><span class="step-no">01</span></div>
 <h3>Anfrage</h3>
 <p>Du schickst uns deine Idee, Skizze oder Referenz über unser Anfrageformular.</p>
 </div>
-<div class="process-card glass-card reveal">
-<div class="glass-chip"><svg class="icon"><use href="#icon-handshake"/></svg></div>
-<span class="step-no">02</span>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-handshake"/></svg></div><span class="step-no">02</span></div>
 <h3>Persönliches Angebot</h3>
 <p>Wir melden uns mit einer ersten Einschätzung und dem finalen Angebot.</p>
 </div>
-<div class="process-card glass-card reveal">
-<div class="glass-chip"><svg class="icon"><use href="#icon-printer"/></svg></div>
-<span class="step-no">03</span>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-printer"/></svg></div><span class="step-no">03</span></div>
 <h3>Produktion</h3>
 <p>Dein Objekt entsteht in Präzisionsqualität auf unseren Bambu Lab P1S &amp; X2D.</p>
 </div>
-<div class="process-card glass-card reveal">
-<div class="glass-chip"><svg class="icon"><use href="#icon-truck"/></svg></div>
-<span class="step-no">04</span>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-truck"/></svg></div><span class="step-no">04</span></div>
 <h3>Versand</h3>
 <p>Verpackt und versendet in die Schweiz, nach Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p>
+</div>
 </div>
 </div>
 <!-- Making-of: ein realer Auftrag von der Skizze bis zum Versand -->
@@ -158,24 +181,30 @@
 </div>
 </section>
 
+<div class="wave wave--to-white" style="--from: var(--surface-2)" aria-hidden="true"></div>
+
 <section id="anfrage" class="section">
 <div class="section-inner">
 <div class="header-block reveal">
 <p class="eyebrow">Anfrage</p>
-<h2 class="heading-2">Projekt anfragen</h2>
+<h2 class="heading-2 split">Projekt anfragen</h2>
+<p class="body-text">In vier kurzen Schritten zum Richtpreis. Deine Angaben laufen rechts live mit.</p>
 </div>
 <div id="request-form" class="request-wrap reveal"></div>
 </div>
 </section>
 
+<div class="wave wave--to-surface" aria-hidden="true"></div>
+
 <section id="ueber-mich" class="section section--alt">
+<div class="section-glow" aria-hidden="true"><span class="g2" style="left:-120px;right:auto;top:-100px;bottom:auto"></span></div>
 <div class="section-inner about-inner">
-<figure class="about-figure reveal">
-<div class="photo"><img src="img/werkstatt.jpg" alt="Unser Druckplatz mit Bambu Lab Drucker und Filament-Trockner" loading="lazy"></div>
+<figure class="about-figure">
+<div class="photo reveal"><img src="img/werkstatt.jpg" alt="Unser Druckplatz mit Bambu Lab Drucker und Filament-Trockner" loading="lazy"></div>
 </figure>
 <div class="about-text reveal">
 <p class="eyebrow">Über mich</p>
-<h2 class="heading-2">Hallo, ich bin Simon</h2>
+<h2 class="heading-2 split">Hallo, ich bin Simon</h2>
 <p class="body-text">Ich bin in Ausbildung zum Zeichner Ingenieurbau (ZFI) und bringe umfangreiche CAD-Erfahrung aus Fusion 360, Blender und AutoCAD mit. Seit über 5 Jahren drucke ich in 3D, heute auf mehreren Bambu Lab P1S und X2D.</p>
 <div class="about-tags">
 <span class="about-tag">Fusion 360</span>
@@ -185,45 +214,64 @@
 </div>
 </div>
 <div class="section-inner">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E68AE"/><stop offset="1" stop-color="#6FB0EC"/></linearGradient></defs></svg>
 <div class="stat-band">
-<div class="stat reveal"><span class="stat-num">5+</span><span class="stat-label">Jahre 3D-Druck-Erfahrung</span></div>
-<div class="stat reveal"><span class="stat-num">59</span><span class="stat-label">veröffentlichte Designs</span></div>
-<div class="stat reveal"><span class="stat-num">187</span><span class="stat-label">Modelle (Pioneer Maker)</span></div>
-<div class="stat reveal"><span class="stat-num" data-hours-base="1654" data-hours-from="2026-10-20">1'654</span><span class="stat-label">Druckstunden</span></div>
+<div class="stat glass-card reveal" style="--pct:.92">
+<div class="stat-ring"><svg viewBox="0 0 112 112"><circle class="track" cx="56" cy="56" r="50"/><circle class="bar" cx="56" cy="56" r="50"/></svg><span class="stat-num">5+</span></div>
+<span class="stat-label">Jahre 3D-Druck-Erfahrung</span>
+</div>
+<div class="stat glass-card reveal" style="--pct:.62">
+<div class="stat-ring"><svg viewBox="0 0 112 112"><circle class="track" cx="56" cy="56" r="50"/><circle class="bar" cx="56" cy="56" r="50"/></svg><span class="stat-num">59</span></div>
+<span class="stat-label">veröffentlichte Designs</span>
+</div>
+<div class="stat glass-card reveal" style="--pct:.78">
+<div class="stat-ring"><svg viewBox="0 0 112 112"><circle class="track" cx="56" cy="56" r="50"/><circle class="bar" cx="56" cy="56" r="50"/></svg><span class="stat-num">187</span></div>
+<span class="stat-label">Modelle (Pioneer Maker)</span>
+</div>
+<div class="stat glass-card reveal" style="--pct:.86">
+<div class="stat-ring"><svg viewBox="0 0 112 112"><circle class="track" cx="56" cy="56" r="50"/><circle class="bar" cx="56" cy="56" r="50"/></svg><span class="stat-num" data-hours-base="1654" data-hours-from="2026-10-20">1'654</span></div>
+<span class="stat-label">Druckstunden</span>
+</div>
 </div>
 </div>
 </section>
 
+<div class="wave wave--to-white" style="--from: var(--surface-2)" aria-hidden="true"></div>
+
 <!-- Materiallager-Band: echtes Foto, ruhige Behandlung -->
-<figure class="photo-band">
+<section class="section" style="padding-top:0;padding-bottom:0">
+<div class="section-inner">
+<figure class="photo photo-band reveal">
 <img src="img/filament-lager.jpg" alt="Mein Filamentlager mit PLA, PETG, TPU und ABS in vielen Farben" loading="lazy">
 <figcaption class="band-cap">
-<span class="k">Materiallager</span>
+<span class="k"><span class="band-dots" aria-hidden="true"><i></i><i></i><i></i></span>Materiallager</span>
 <span class="v">PLA · PETG · TPU · ABS – die passende Farbe für dein Projekt</span>
 </figcaption>
 </figure>
+</div>
+</section>
 
 <section id="faq" class="section">
 <div class="section-inner">
 <div class="header-block reveal">
 <p class="eyebrow">FAQ</p>
-<h2 class="heading-2">Häufig gestellte Fragen</h2>
+<h2 class="heading-2 split">Häufig gestellte Fragen</h2>
 </div>
-<div class="faq-list glass-card">
+<div class="faq-list">
 <div class="faq-item reveal">
-<button class="faq-question"><span>Welche Materialien bietet ihr an?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
+<button class="faq-question"><span>Welche Materialien bietet ihr an?</span><span class="faq-toggle"><svg class="icon icon-plus"><use href="#icon-plus"/></svg></span></button>
 <div class="faq-answer"><p>PLA, PETG, TPU und ABS, je nach Anwendung wählen wir mit dir das passende Material. PLA für Dekoartikel und Prototypen, PETG für funktionale Teile, TPU für flexible Anwendungen und ABS für Aussenbereiche.</p></div>
 </div>
 <div class="faq-item reveal">
-<button class="faq-question"><span>Wie lange dauert die Lieferung?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
+<button class="faq-question"><span>Wie lange dauert die Lieferung?</span><span class="faq-toggle"><svg class="icon icon-plus"><use href="#icon-plus"/></svg></span></button>
 <div class="faq-answer"><p>5–10 Werktage ab Auftragsbestätigung, je nach Aufwand und aktueller Auslastung. Bei dringenden Anfragen sag uns einfach Bescheid.</p></div>
 </div>
 <div class="faq-item reveal">
-<button class="faq-question"><span>In welche Länder versendet ihr?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
+<button class="faq-question"><span>In welche Länder versendet ihr?</span><span class="faq-toggle"><svg class="icon icon-plus"><use href="#icon-plus"/></svg></span></button>
 <div class="faq-answer"><p>Aktuell versenden wir in die Schweiz, nach Deutschland, Italien, Frankreich, Österreich und Liechtenstein.</p></div>
 </div>
 <div class="faq-item reveal">
-<button class="faq-question"><span>Wie kann ich bezahlen?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
+<button class="faq-question"><span>Wie kann ich bezahlen?</span><span class="faq-toggle"><svg class="icon icon-plus"><use href="#icon-plus"/></svg></span></button>
 <div class="faq-answer"><p>Bequem und sicher über Stripe – du wählst einfach deine bevorzugte Methode: Kredit-/Debitkarte, Apple&nbsp;Pay, Google&nbsp;Pay, TWINT oder Klarna. Nach der Auftragsbestätigung bekommst du von uns einen Zahlungslink – anklicken, Methode wählen, fertig.</p>
 <div class="pay-methods">
 <span class="pay-badge" title="Visa"><svg viewBox="0 0 48 16" xmlns="http://www.w3.org/2000/svg"><text x="24" y="13" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-style="italic" font-size="14" letter-spacing="1" fill="#1A1F71">VISA</text></svg></span>
@@ -236,7 +284,7 @@
 </div>
 </div>
 <div class="faq-item reveal">
-<button class="faq-question"><span>Welche Dateiformate kann ich einreichen?</span><svg class="icon icon-plus"><use href="#icon-plus"/></svg><svg class="icon icon-minus"><use href="#icon-minus"/></svg></button>
+<button class="faq-question"><span>Welche Dateiformate kann ich einreichen?</span><span class="faq-toggle"><svg class="icon icon-plus"><use href="#icon-plus"/></svg></span></button>
 <div class="faq-answer"><p>Alles Mögliche: JPG, PDF, MP4, DWG, STL, STEP oder 3MF, schick uns einfach, was du hast, wir schauen es uns an.</p></div>
 </div>
 </div>
@@ -250,6 +298,7 @@
 <div class="shimmer-logo shimmer-logo--sm" role="img" aria-label="Skuvert Logo"></div>
 <span class="wordmark">SKUVERT</span>
 </div>
+<p class="footer-tagline">Custom 3D Service aus der Schweiz – von der Skizze bis zum fertigen Objekt.</p>
 <div class="footer-links">
 <a class="glass-btn glass-btn--pill-sm" href="https://makerworld.com/de/@Skuvert" target="_blank" rel="noreferrer"><svg class="icon"><use href="#icon-cube"/></svg>MakerWorld</a>
 <a class="glass-btn glass-btn--pill-sm" href="https://www.instagram.com/skuvert.official/" target="_blank" rel="noreferrer"><svg class="icon"><use href="#icon-instagram"/></svg>Instagram</a>
@@ -259,6 +308,7 @@
 <a href="impressum.html">Impressum</a>
 <a href="datenschutz.html">Datenschutz</a>
 </div>
+<div class="footer-divider" aria-hidden="true"></div>
 <div class="pay-methods">
 <span class="pay-badge" title="Visa"><svg viewBox="0 0 48 16" xmlns="http://www.w3.org/2000/svg"><text x="24" y="13" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-style="italic" font-size="14" letter-spacing="1" fill="#1A1F71">VISA</text></svg></span>
 <span class="pay-badge" title="Mastercard"><svg viewBox="0 0 34 22" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="11" r="9" fill="#EB001B"/><circle cx="21" cy="11" r="9" fill="#F79E1B"/><path d="M17 4.2a9 9 0 0 0 0 13.6 9 9 0 0 0 0-13.6z" fill="#FF5F00"/></svg></span>
@@ -272,7 +322,7 @@
 <p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
 </footer>
 
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 
 </body>
 </html>
