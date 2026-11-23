@@ -508,6 +508,9 @@ firstName: "", lastName: "", email: "", phone: "", notes: "",
 payment: "link", invoiceConfirmed: false,
 agb: false, sent: false, orderNo: null,
 files: [], // File-Objekte aus dem Datei-Feld (nie per push ändern, immer neu zuweisen)
+attachLink: null, // Link zur Anhang-Seite im Dashboard, sobald hochgeladen
+attachFor: null, // Dateiliste (Signatur), zu der attachLink gehört
+busy: "", // Text auf den Senden-Buttons während des Uploads
 };
 let s = { ...initialState };
 
@@ -749,7 +752,9 @@ m += `Rechnung akzeptiert : Ja – verbindliche Zahlungszusage, Zahlungsziel 14 
 if (s.notes) m += `\nANMERKUNGEN:\n${s.notes}\n`;
 if (s.files.length) {
 m += `\nANHANG (${s.files.length})\n`;
+if (s.attachLink) m += `Link: ${s.attachLink}\n`;
 s.files.forEach((f) => { m += `- ${f.name} (${fmtSize(f.size)})\n`; });
+if (!s.attachLink) m += `(Upload hat nicht geklappt – Dateien folgen separat)\n`;
 }
 m += `\nKONTAKT\n`;
 m += `Name : ${s.firstName} ${s.lastName}\n`;
@@ -777,8 +782,9 @@ return true;
 }
 
 async function sendEmail() {
-if (!validateContact()) return;
+if (!validateContact() || s.busy) return;
 await reserveOrderNumber();
+await uploadAttachments();
 const subject = encodeURIComponent(`Neue Bestellung – ${s.orderNo} – ${s.name}`);
 const body = encodeURIComponent(buildMessage(priceRangeText()));
 window.location.href = `mailto:simon.kull@skuvert.ch?subject=${subject}&body=${body}`;
@@ -786,19 +792,24 @@ setTimeout(() => { s.sent = true; render(); }, 700);
 }
 
 async function sendWhatsApp() {
-if (!validateContact()) return;
+if (!validateContact() || s.busy) return;
+// Fenster sofort im Klick öffnen – nach dem Upload würden Popup-Blocker es sperren.
+const win = window.open("", "_blank");
 await reserveOrderNumber();
-const text = encodeURIComponent(buildMessage(priceRangeText()));
-window.open(`https://wa.me/41774646298?text=${text}`, "_blank");
+await uploadAttachments();
+const url = `https://wa.me/41774646298?text=${encodeURIComponent(buildMessage(priceRangeText()))}`;
+if (win && !win.closed) win.location.href = url; else window.location.href = url;
 setTimeout(() => { s.sent = true; render(); }, 700);
 }
 
 // ===== Anhänge =====
-// mailto:/wa.me können keine Dateien mitgeben (Browser-Grenze). Wo das Gerät die
-// System-Teilen-Funktion mit Dateien kann (Handy, Windows-Chrome), gehen Text
-// und Dateien zusammen raus; sonst bleibt der Hinweis, im Mail-/WhatsApp-
-// Fenster nochmals anzuhängen. Die Dateinamen stehen immer in der Nachricht.
-const FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.pdf,.mp4,.mov,.stl,.obj,.step,.stp,.3mf,.dxf,.dwg,.f3d";
+// mailto:/wa.me können keine Dateien mitgeben. Deshalb lädt die Website die
+// Dateien beim Absenden direkt in den Blob-Speicher des Dashboards (Vercel Blob,
+// Client-Upload) und schreibt den Link zur Anhang-Seite in die Nachricht.
+// Die Seite ist login-geschützt; die Dateien werden nach 90 Tagen gelöscht.
+const DASHBOARD_URL = "https://skuvert-dashboard.vercel.app";
+const BLOB_CLIENT = "https://esm.sh/@vercel/blob@2.9.0/client"; // Version = dashboard/package.json
+const FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.pdf,.mp4,.mov,.stl,.obj,.step,.stp,.3mf,.dxf,.dwg,.f3d"; // = EXT in dashboard/app/api/anhang/route.ts
 const FILE_MAX_MB = 25;
 function fmtSize(b) { return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1).replace(".0", "") + " MB"; }
 function addFiles(list) {
@@ -810,8 +821,50 @@ next.push(f);
 }
 s.files = next;
 }
-function canShareFiles() {
-try { return s.files.length > 0 && !!navigator.canShare && navigator.canShare({ files: s.files }); } catch (_) { return false; }
+function safeFileName(name) {
+const dot = name.lastIndexOf(".");
+const base = (dot > 0 ? name.slice(0, dot) : name).normalize("NFKD").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "datei";
+return `${base}${dot > 0 ? name.slice(dot).toLowerCase() : ""}`;
+}
+// Lädt alle Dateien hoch (einmal pro Dateiliste) und setzt s.attachLink.
+// Bei Fehler bleibt attachLink leer; die Nachricht nennt dann nur die Dateinamen.
+async function uploadAttachments() {
+const sig = s.files.map((f) => f.name + f.size).join("|");
+if (!s.files.length || (s.attachLink && s.attachFor === sig)) return;
+s.attachLink = null;
+const id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
+try {
+setBusy("Dateien werden hochgeladen …");
+const { upload } = await import(BLOB_CLIENT);
+const total = s.files.reduce((a, f) => a + f.size, 0);
+let done = 0;
+for (const f of s.files) {
+const before = done;
+await upload(`anhang/${id}/${safeFileName(f.name)}`, f, {
+access: "public",
+handleUploadUrl: `${DASHBOARD_URL}/api/anhang`,
+multipart: f.size > 8 * 1048576,
+onUploadProgress: (e) => { setBusy(`Dateien werden hochgeladen … ${Math.min(99, Math.round(((before + e.loaded) / total) * 100))} %`); },
+});
+done = before + f.size;
+}
+s.attachLink = `${DASHBOARD_URL}/anhang/${id}`;
+s.attachFor = sig;
+} catch (err) {
+console.warn("Anhang-Upload fehlgeschlagen", err);
+alert("Die Dateien konnten leider nicht hochgeladen werden. Die Anfrage geht trotzdem raus – bitte schick die Dateien danach direkt per Mail oder WhatsApp nach.");
+} finally {
+setBusy("");
+}
+}
+// Upload-Fortschritt direkt auf die Senden-Buttons schreiben (ohne Re-Render).
+function setBusy(text) {
+s.busy = text;
+mount.querySelectorAll(".send-btn").forEach((b) => {
+if (!b.dataset.label) b.dataset.label = b.innerHTML;
+b.disabled = !!text;
+b.innerHTML = text || b.dataset.label;
+});
 }
 function filesHtml() {
 return `<label class="file-drop" data-drop>
@@ -822,21 +875,9 @@ return `<label class="file-drop" data-drop>
 ${s.files.length ? `<div class="file-list">${s.files.map((f, i) => `<span class="file-pill">${esc(f.name)} <small>${fmtSize(f.size)}</small><button type="button" data-remove-file="${i}" aria-label="Datei entfernen">×</button></span>`).join("")}</div>` : ""}`;
 }
 function attachNoteHtml() {
-if (!s.files.length) return `<div class="notice-box compact"><span class="n-ic">${svg("icon-info")}</span><p>Du kannst Skizzen, Fotos oder 3D-Dateien auch <strong>direkt im Mail- oder WhatsApp-Fenster</strong> anhängen, bevor du sendest.</p></div>`;
+if (!s.files.length) return "";
 const n = s.files.length;
-return canShareFiles()
-? `<div class="notice-box compact"><span class="n-ic">${svg("icon-paperclip")}</span><p><strong>${n} ${n === 1 ? "Datei" : "Dateien"} ausgewählt.</strong> Mit „Teilen mit Anhang" gehen Text und Dateien zusammen an Mail oder WhatsApp. Bei E-Mail/WhatsApp direkt bitte die Dateien im geöffneten Fenster nochmals anhängen.</p></div>`
-: `<div class="notice-box compact"><span class="n-ic">${svg("icon-paperclip")}</span><p><strong>${n} ${n === 1 ? "Datei" : "Dateien"} ausgewählt.</strong> Dein Browser kann sie nicht automatisch mitgeben – bitte im geöffneten Mail- oder WhatsApp-Fenster nochmals anhängen. Die Dateinamen stehen bereits in der Nachricht.</p></div>`;
-}
-async function sendShare() {
-if (!validateContact()) return;
-await reserveOrderNumber();
-try {
-await navigator.share({ title: `Neue Bestellung – ${s.orderNo} – ${s.name}`, text: buildMessage(priceRangeText()), files: s.files });
-s.sent = true; render();
-} catch (err) {
-if (err && err.name !== "AbortError") alert("Teilen hat nicht geklappt – bitte per E-Mail oder WhatsApp senden und die Dateien dort anhängen.");
-}
+return `<div class="notice-box compact"><span class="n-ic">${svg("icon-paperclip")}</span><p><strong>${n} ${n === 1 ? "Datei" : "Dateien"} ausgewählt.</strong> Sie werden beim Absenden automatisch hochgeladen – in deiner Nachricht steht dann ein Link dazu. Du musst nichts mehr anhängen.</p></div>`;
 }
 
 function label(text, required) {
@@ -1042,7 +1083,6 @@ ${attachNoteHtml()}
 <span>Ich habe die <a href="agb.html" target="_blank" rel="noopener" data-legal="agb">AGB</a> und die <a href="datenschutz.html" target="_blank" rel="noopener" data-legal="datenschutz">Datenschutzerklärung</a> gelesen und akzeptiere sie. <span class="req">*</span></span>
 </label>
 <div class="send-grid">
-${canShareFiles() ? `<button class="glass-btn glass-btn--accent send-btn" data-action="send-share" ${ready ? "" : "disabled"}>${svg("icon-share")} Teilen mit Anhang</button>` : ""}
 <button class="glass-btn glass-btn--dark send-btn" data-action="send-email" ${ready ? "" : "disabled"}>${svg("icon-mail")} Per E-Mail</button>
 <button class="glass-btn glass-btn--whatsapp send-btn" data-action="send-whatsapp" ${ready ? "" : "disabled"}>${svg("icon-whatsapp")} WhatsApp</button>
 </div>
@@ -1169,7 +1209,6 @@ act("next", () => nav(1));
 act("back", () => nav(-1));
 act("send-email", sendEmail);
 act("send-whatsapp", sendWhatsApp);
-act("send-share", sendShare);
 
 const fileInput = mount.querySelector("#f-files");
 if (fileInput) {
