@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<!-- GitHub Pages liefert diese Datei bei jeder unbekannten Adresse aus, auch bei
+     /ordner/unterseite. Deshalb alle Pfade absolut mit fuehrendem "/". -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seite nicht gefunden – Skuvert, Custom 3D Service</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2E68AE">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="apple-touch-icon" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css?v=9">
+<style>
+.nf { text-align: center; }
+.nf-inner { position: relative; z-index: 2; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.nf-code { display: flex; align-items: center; justify-content: center; gap: .06em; font-family: var(--display); font-weight: 800; font-size: clamp(120px, 26vw, 230px); line-height: .9; letter-spacing: -.04em; }
+.nf-code span { background: var(--grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .04em; }
+.nf-code svg { width: .74em; height: .74em; flex: none; overflow: visible; }
+.nf-code circle { fill: none; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transform: rotate(-90deg); transform-origin: 50% 50%; animation: nf-print 1.5s var(--ease-out) forwards; animation-delay: calc(var(--i) * .22s + .2s); }
+.nf-code .nf-nozzle { fill: var(--sage); stroke: none; animation: nf-orbit 5s linear infinite; }
+@keyframes nf-print { to { stroke-dashoffset: 0; } }
+@keyframes nf-orbit { to { transform: rotate(270deg); } }
+.nf h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 4.6vw, 44px); letter-spacing: -.025em; line-height: 1.1; margin: 0; }
+.nf .cta-row { justify-content: center; margin-top: 8px; }
+@media (max-width: 480px) { .nf .cta-row { width: 100%; flex-direction: column; align-items: stretch; } }
+@media (prefers-reduced-motion: reduce) {
+.nf-code circle { animation: none; stroke-dashoffset: 0; }
+.nf-code .nf-nozzle { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+<a class="nav-brand" href="/" aria-label="Zur Startseite"><span class="nav-logo" role="img" aria-label="Skuvert Logo"></span><span class="nav-word">SKUVERT</span></a>
+<nav class="nav-links" aria-label="Hauptnavigation">
+<a href="/#ablauf">Ablauf</a>
+<a href="/#anfrage">Anfrage</a>
+<a href="/#ueber-mich">Über mich</a>
+<a href="/#faq">FAQ</a>
+</nav>
+<a href="/#anfrage" class="glass-btn glass-btn--accent">Anfrage starten</a>
+</header>
+
+<main>
+<section class="hero nf">
+<div class="hero-bg" aria-hidden="true">
+<span class="orb orb--1"></span>
+<span class="orb orb--2"></span>
+<span class="orb orb--3"></span>
+</div>
+<div class="nf-inner">
+<!-- Die Null wird Ring fuer Ring "gedruckt", der gruene Punkt ist die Duese -->
+<div class="nf-code" aria-hidden="true">
+<span>4</span>
+<svg viewBox="0 0 100 100">
+<circle style="--i:0" cx="50" cy="50" r="46" pathLength="100" stroke="#1E4C8A"/>
+<circle style="--i:1" cx="50" cy="50" r="36" pathLength="100" stroke="#2E68AE"/>
+<circle style="--i:2" cx="50" cy="50" r="26" pathLength="100" stroke="#5A97DC"/>
+<circle class="nf-nozzle" cx="96" cy="50" r="6"/>
+</svg>
+<span>4</span>
+</div>
+<h1>Diese Seite gibt es nicht.</h1>
+<p class="body-text">Fehler 404: Vielleicht ist die Adresse vertippt oder die Seite wurde verschoben. Über die Startseite findest du alles wieder.</p>
+<div class="cta-row">
+<a href="/" class="glass-btn glass-btn--accent glass-btn--lg">Zur Startseite <svg class="icon arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+<!-- href="" laedt die aktuelle Adresse neu, ganz ohne JavaScript -->
+<a href="" class="glass-btn glass-btn--ghost glass-btn--lg"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg> Seite neu laden</a>
+</div>
+</div>
+</section>
+</main>
+
+<footer class="footer">
+<div class="footer-logo-row">
+<div class="shimmer-logo shimmer-logo--sm" role="img" aria-label="Skuvert Logo"></div>
+<span class="wordmark">SKUVERT</span>
+</div>
+<div class="footer-legal">
+<a href="/agb.html">AGB</a>
+<a href="/impressum.html">Impressum</a>
+<a href="/datenschutz.html">Datenschutz</a>
+</div>
+<p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
+</footer>
+
+</body>
+</html>
