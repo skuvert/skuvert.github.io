@@ -806,7 +806,7 @@ setTimeout(() => { s.sent = true; render(); }, 700);
 // mailto:/wa.me können keine Dateien mitgeben. Deshalb lädt die Website die
 // Dateien beim Absenden direkt in den Blob-Speicher des Dashboards (Vercel Blob,
 // Client-Upload) und schreibt den Link zur Anhang-Seite in die Nachricht.
-// Die Seite ist login-geschützt; die Dateien werden nach 90 Tagen gelöscht.
+// Die Seite ist login-geschützt; die Dateien (privater Store) werden nach 60 Tagen gelöscht.
 const DASHBOARD_URL = "https://skuvert-dashboard.vercel.app";
 const BLOB_CLIENT = "https://esm.sh/@vercel/blob@2.9.0/client"; // Version = dashboard/package.json
 const FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.heic,.pdf,.mp4,.mov,.stl,.obj,.step,.stp,.3mf,.dxf,.dwg,.f3d"; // = EXT in dashboard/app/api/anhang/route.ts
@@ -841,7 +841,7 @@ let done = 0;
 for (const f of s.files) {
 const before = done;
 await upload(`anhang/${id}/${safeFileName(f.name)}`, f, {
-access: "public",
+access: "private",
 handleUploadUrl: `${DASHBOARD_URL}/api/anhang`,
 multipart: f.size > 8 * 1048576,
 onUploadProgress: (e) => { setBusy(`Dateien werden hochgeladen … ${Math.min(99, Math.round(((before + e.loaded) / total) * 100))} %`); },
