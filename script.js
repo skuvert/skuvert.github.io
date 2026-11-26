@@ -1257,6 +1257,13 @@ const sec = document.getElementById("anfrage");
 if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+// "Serienanfrage starten": Menge direkt auf Kleinserie setzen (Rechnung wird waehlbar).
+document.querySelectorAll("[data-series]").forEach((a) => a.addEventListener("click", () => {
+if (s.sent) s = { ...initialState };
+if (qtyNum() < SERIES_MIN) s.qty = String(SERIES_MIN);
+render();
+}));
+
 loadInventory(); // Bestand vom Dashboard laden (Fallback: Defaults)
 render();
 })();

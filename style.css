@@ -822,6 +822,27 @@ background-size: 200% 100%; animation: logo-shimmer 9s linear infinite;
 .stage-chip--dim { display: none; }
 }
 
+/* ---------- Für Firmen ---------- */
+.biz-grid { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1080px) { .biz-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .biz-grid { grid-template-columns: 1fr; } }
+.biz-contact { display: flex; align-items: center; justify-content: space-between; gap: 28px; margin-top: 20px; padding: clamp(22px, 3vw, 32px); }
+.biz-contact-text { display: flex; gap: 18px; align-items: flex-start; }
+.biz-contact h3, .biz-ref h3 { font-family: var(--display); font-size: 18px; font-weight: 700; margin: 0 0 6px; color: var(--ink); letter-spacing: -0.01em; }
+.biz-contact p, .biz-ref p { font-size: 14.5px; line-height: 1.65; color: var(--muted); margin: 0; }
+.biz-contact-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.biz-contact > .glass-btn { flex-shrink: 0; }
+.biz-refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 20px; }
+.biz-ref { display: block; padding: 24px; text-decoration: none; transition: box-shadow .3s ease, transform .3s var(--ease-out); }
+a.biz-ref:hover { box-shadow: var(--shadow-md), inset 0 1px 0 #fff; transform: translateY(-2px); }
+.biz-ref-k { display: inline-block; font-family: var(--display); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sage-deep); padding: 6px 12px; border-radius: var(--pill); background: var(--sage-tint); margin-bottom: 14px; }
+.biz-ref--empty { background: transparent; border-style: dashed; border-color: var(--border-strong); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+@media (max-width: 760px) {
+.biz-contact { flex-direction: column; align-items: stretch; }
+.biz-contact-text { flex-direction: column; align-items: center; text-align: center; }
+.biz-contact-links { justify-content: center; }
+}
+
 /* ---------- Bewegung reduzieren ---------- */
 @media (prefers-reduced-motion: reduce) {
 *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }

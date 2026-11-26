@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -43,6 +43,8 @@
 <symbol id="icon-paperclip" viewBox="0 0 24 24"><path d="M21 12.5l-8.2 8.2a5.5 5.5 0 0 1-7.8-7.8L13.6 4.3a3.5 3.5 0 0 1 5 5l-8.7 8.6a1.5 1.5 0 0 1-2.1-2.1L15.6 8"/></symbol>
 <symbol id="icon-share" viewBox="0 0 24 24"><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6h14v-6"/></symbol>
 <symbol id="icon-ruler" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></symbol>
+<symbol id="icon-invoice" viewBox="0 0 24 24"><path d="M6 2h9l4 4v16l-2.5-1.5L14 22l-2-1.5L10 22l-2.5-1.5L5 22V3a1 1 0 0 1 1-1z"/><path d="M9 9h6M9 13h6M9 17h3"/></symbol>
+<symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
 <symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
 </svg>
 
@@ -52,6 +54,7 @@
 <a href="#ablauf">Ablauf</a>
 <a href="#anfrage">Anfrage</a>
 <a href="#ueber-mich">Über mich</a>
+<a href="#firmen">Für Firmen</a>
 <a href="#faq">FAQ</a>
 </nav>
 <a href="#anfrage" class="glass-btn glass-btn--accent">Anfrage starten</a>
@@ -251,6 +254,75 @@
 </div>
 </section>
 
+<div class="wave wave--to-surface" aria-hidden="true"></div>
+
+<!-- Geschaeftskunden & Serien. Alle Zahlen hier kommen aus der Preislogik in script.js
+     (qtyDiscount, SERIES_MIN, INVOICE_TEXT) - bei Aenderungen dort auch hier anpassen. -->
+<section id="firmen" class="section section--alt">
+<div class="section-glow" aria-hidden="true"><span class="g1"></span></div>
+<div class="section-inner">
+<div class="header-block reveal">
+<p class="eyebrow">Für Firmen</p>
+<h2 class="heading-2 split">Geschäftskunden &amp; Serien</h2>
+<p class="body-text">Halterungen, Ersatzteile, Prototypen oder Kleinserien für deinen Betrieb: Wir drucken auch in Stückzahlen. Gleicher Ablauf wie bei allen, mit ein paar Dingen, die für Firmen zählen.</p>
+</div>
+<div class="card-grid biz-grid">
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-boxes"/></svg></div></div>
+<h3>Serien &amp; Stückzahlen</h3>
+<p>Vom Einzelteil bis zur Kleinserie. Ab 7 Stück ist jede Farbe bestellbar, nicht nur was gerade am Lager liegt. Nachbestellungen drucken wir mit derselben Datei.</p>
+</div>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-layers"/></svg></div></div>
+<h3>Staffelpreise</h3>
+<p>Je mehr Stück, desto günstiger das einzelne: 5&nbsp;% ab 3, 10&nbsp;% ab 6 und 15&nbsp;% ab 11 Stück. Bei grösseren Mengen rechnen wir individuell.</p>
+</div>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-calendar"/></svg></div></div>
+<h3>Planbare Lieferung</h3>
+<p>Bei Serien legen wir den Liefertermin gemeinsam fest, bevor der Druck startet. Mehrere Drucker laufen parallel, damit der Termin auch hält.</p>
+</div>
+<div class="process-card glass-card reveal tilt" data-tilt="5">
+<div class="card-top"><div class="glass-chip"><svg class="icon"><use href="#icon-invoice"/></svg></div></div>
+<h3>Rechnung auf Firma</h3>
+<p>Ab 7 Stück zahlst du auf Rechnung, Zahlungsziel 14 Tage. Die Rechnung läuft auf deine Firma, mit allen Angaben für die Buchhaltung.</p>
+</div>
+</div>
+
+<div class="biz-contact glass-card reveal">
+<div class="biz-contact-text">
+<div class="glass-chip"><svg class="icon"><use href="#icon-mail"/></svg></div>
+<div>
+<h3>Direkter Draht für Firmenanfragen</h3>
+<p>Lieber erst kurz besprechen? Schreib Simon direkt, mit Zeichnung, Muster oder einfach der Stückzahl.</p>
+<div class="biz-contact-links">
+<a class="glass-btn glass-btn--pill-sm" href="mailto:simon.kull@skuvert.ch?subject=Firmenanfrage"><svg class="icon"><use href="#icon-mail"/></svg>simon.kull@skuvert.ch</a>
+<a class="glass-btn glass-btn--pill-sm" href="https://wa.me/41774646298" target="_blank" rel="noreferrer"><svg class="icon"><use href="#icon-whatsapp"/></svg>+41 77 464 62 98</a>
+</div>
+</div>
+</div>
+<a href="#anfrage" class="glass-btn glass-btn--accent glass-btn--lg" data-series>Serienanfrage starten <svg class="icon arrow"><use href="#icon-arrow"/></svg></a>
+</div>
+
+<!-- Referenzen: sobald ein Firmenkunde zustimmt, die zweite Karte durch ein echtes
+     Projekt ersetzen (Titel, ein Satz was gedruckt wurde, Stueckzahl, optional Foto). -->
+<div class="biz-refs">
+<a class="biz-ref glass-card reveal" href="#ablauf">
+<span class="biz-ref-k">Projektbeispiel</span>
+<h3>Werkzeug-Einlagen, von der Skizze bis zum Versand</h3>
+<p>Ein echter Auftrag, Schritt für Schritt dokumentiert. Die Fotos findest du oben im Making-of.</p>
+</a>
+<div class="biz-ref biz-ref--empty glass-card reveal">
+<span class="biz-ref-k">Referenz</span>
+<h3>Hier kommt das erste Firmenprojekt hin</h3>
+<p>Referenzen zeigen wir nur mit Einverständnis der Kunden. Vielleicht ist deins das erste.</p>
+</div>
+</div>
+</div>
+</section>
+
+<div class="wave wave--to-white" style="--from: var(--surface-2)" aria-hidden="true"></div>
+
 <section id="faq" class="section">
 <div class="section-inner">
 <div class="header-block reveal">
@@ -322,7 +394,7 @@
 <p class="small-text">© 2026 Skuvert, Custom 3D Service</p>
 </footer>
 
-<script src="script.js?v=10"></script>
+<script src="script.js?v=11"></script>
 
 </body>
 </html>
