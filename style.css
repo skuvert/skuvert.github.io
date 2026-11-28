@@ -853,3 +853,30 @@ a.biz-ref:hover { box-shadow: var(--shadow-md), inset 0 1px 0 #fff; transform: t
 .stat .stat-ring .bar { stroke-dashoffset: calc(314 - 314 * var(--pct, .8)); }
 .process-path .draw { stroke-dashoffset: 0; }
 }
+
+/* ---------- Beispiele / Galerie ---------- */
+
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 18px; margin-top: clamp(40px, 5vw, 64px); }
+.ex-card { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-lg); background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow-md); transition: transform .5s var(--ease-out), box-shadow .4s ease; }
+.ex-card:hover { transform: translateY(-4px); }
+.ex-img { aspect-ratio: 1 / 1; overflow: hidden; background: var(--surface); }
+.ex-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s var(--ease-out); }
+.ex-card:hover .ex-img img { transform: scale(1.05); }
+.ex-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 20px; flex: 1; }
+.ex-body h3 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.ex-body p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.ex-prices { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); }
+.ex-price { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13.5px; color: var(--muted); }
+.ex-price strong { font-size: 15px; color: var(--blue-deep); white-space: nowrap; }
+.ex-note { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin: 28px auto 0; max-width: 60ch; font-size: 13.5px; color: var(--muted); }
+.ex-note .icon { flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; }
+.ex-cta { display: flex; justify-content: center; margin-top: 18px; }
+@media (max-width: 560px) {
+.ex-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.ex-card { border-radius: 20px; }
+.ex-body { padding: 12px 12px 14px; gap: 6px; }
+.ex-body h3 { font-size: 14.5px; }
+.ex-body p { font-size: 12.5px; line-height: 1.45; }
+.ex-price { flex-direction: column; align-items: flex-start; gap: 0; font-size: 12px; }
+.ex-price strong { font-size: 14px; }
+}
