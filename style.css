@@ -880,3 +880,30 @@ a.biz-ref:hover { box-shadow: var(--shadow-md), inset 0 1px 0 #fff; transform: t
 .ex-price { flex-direction: column; align-items: flex-start; gap: 0; font-size: 12px; }
 .ex-price strong { font-size: 14px; }
 }
+
+/* ---------- Google-Bewertung im Hero ---------- */
+.hero-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.hero-review {
+display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 9px; border-radius: var(--pill);
+background: var(--glass-strong); border: 1px solid var(--glass-border); box-shadow: var(--shadow-xs), inset 0 1px 0 #fff;
+backdrop-filter: blur(10px); font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none;
+animation: badge-in .8s var(--ease-out) .15s both; transition: transform .35s var(--ease-spring), box-shadow .3s ease, border-color .3s ease;
+}
+.hero-review strong { font-weight: 700; color: var(--blue-deep); }
+.hero-review:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: rgba(251,188,4,.55); }
+.rv-g { width: 20px; height: 20px; flex-shrink: 0; background: #fff; border-radius: 50%; padding: 2px; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+.rv-stars { display: inline-flex; gap: 1px; }
+.rv-stars svg { width: 13px; height: 13px; fill: #FBBC04; animation: rv-twinkle 4.5s ease-in-out infinite; transform-origin: 50% 55%; }
+.rv-stars svg:nth-child(2) { animation-delay: .12s; }
+.rv-stars svg:nth-child(3) { animation-delay: .24s; }
+.rv-stars svg:nth-child(4) { animation-delay: .36s; }
+.rv-stars svg:nth-child(5) { animation-delay: .48s; }
+.hero-review:hover .rv-stars svg { animation: rv-pop .5s var(--ease-spring) both; }
+.hero-review:hover .rv-stars svg:nth-child(2) { animation-delay: .05s; }
+.hero-review:hover .rv-stars svg:nth-child(3) { animation-delay: .1s; }
+.hero-review:hover .rv-stars svg:nth-child(4) { animation-delay: .15s; }
+.hero-review:hover .rv-stars svg:nth-child(5) { animation-delay: .2s; }
+@keyframes rv-twinkle { 0%, 82%, 100% { transform: scale(1); filter: none; } 88% { transform: scale(1.3) rotate(12deg); filter: drop-shadow(0 0 4px rgba(251,188,4,.8)); } }
+@keyframes rv-pop { 0% { transform: scale(1); } 50% { transform: scale(1.4) rotate(-10deg); } 100% { transform: scale(1); } }
+@media (max-width: 860px) { .hero-badges { justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .rv-stars svg, .hero-review:hover .rv-stars svg { animation: none; } }
