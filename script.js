@@ -365,9 +365,9 @@ const SIZES = [
 ];
 
 // ===== Preisformel =====
-// Total = max(Mindestpreis, Konstruktion × Grössenfaktor + Rüstpauschale + Druck × Menge − Mengenrabatt)
+// Total = max(Mindestpreis, Konstruktion × Grössenfaktor + Bearbeitungspauschale + Druck × Menge − Mengenrabatt)
 const MIN_PRICE = 15;   // Mindestauftragswert, sobald Konstruktionsaufwand dazukommt
-const SETUP_FEE = 5;    // Rüsten, Slicen, Verpacken – einmal pro Druckauftrag
+const SETUP_FEE = 5;    // Bearbeitung, Slicen, Verpacken – einmal pro Druckauftrag
 const MATERIAL_FACTOR = { PLA: 1, PETG: 1.15, ABS: 1.2, TPU: 1.35 };
 const COLOR_FACTOR = 0.15; // je zusätzliche Farbe (Filamentwechsel + Purge-Abfall)
 // Rabatt steigt mit der Stückzahl, gedeckelt bei 15 %. Gilt nur auf den Druckanteil.
@@ -666,7 +666,7 @@ const matAdd = base * (mat - 1);
 if (matAdd > 0) rows.push({ k: `Material ${s.material} (+${Math.round((mat - 1) * 100)} %)`, v: matAdd });
 const colAdd = (base + matAdd) * COLOR_FACTOR * extraColors();
 if (colAdd > 0) rows.push({ k: `${s.colors.length} Farben (+${COLOR_FACTOR * 100} % je Zusatzfarbe)`, v: colAdd });
-rows.push({ k: "Rüsten & Verpacken", v: SETUP_FEE });
+rows.push({ k: "Bearbeitung & Verpacken", v: SETUP_FEE });
 const print = base + matAdd + colAdd;
 const disc = qtyDiscount(q);
 total += print + SETUP_FEE;
