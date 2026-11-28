@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /buchhaltung/
+Disallow: /test/
+
+Sitemap: https://www.skuvert.ch/sitemap.xml
