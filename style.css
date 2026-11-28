@@ -773,6 +773,7 @@ animation: wave-front 16s linear infinite;
 .footer-links { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
 .footer .glass-btn--pill-sm { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.22); color: #fff; backdrop-filter: blur(8px); }
 .footer .glass-btn--pill-sm:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); }
+.icon.icon-google { stroke: none; }
 .footer-flags { font-size: 15px; letter-spacing: .1em; }
 .footer p.small-text { width: 100%; color: rgba(255,255,255,.6); }
 .footer-legal { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
